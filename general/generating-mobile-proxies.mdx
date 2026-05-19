@@ -1,0 +1,189 @@
+---
+title: 'Generating Mobile Proxies'
+description: 'Learn how to generate and use mobile proxies on our platform'
+---
+
+If you have available mobile data on your account you can generate mobile proxies on the Mobile Generator dashboard section.
+
+You can generate 1,000 proxies at a time through the dashboard and you can do this an unlimited number of times.
+
+The generator will allow you to select your geolocation and carrier settings as well as the session type.
+
+<img
+  src="/images/general/mobile-generator-page.png"
+  alt="Byteful Mobile Proxies Generator"
+/>
+
+## Syntax Generation
+
+You can also generate mobile proxies via syntax generation. Our proxies have a standardized format and as long as you generate proxy information in this format then your proxies will be accepted by our network.
+
+### Basic Random Mobile Proxy
+
+**Format**
+```
+mobile.byteful.com:8000:{username}:{password}
+```
+
+**Example**
+```
+mobile.byteful.com:8000:stevejobs:apple123
+```
+
+### Sticky Mobile Proxy
+
+You can make a proxy have a sticky IP address by adding a session ID in this format: `_s_{random_alphanumeric}` to the username field of the proxy. Any requests with using a proxy with the same alphanumeric session ID will try to link you to the same IP address as the first request with that session ID.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_s_{random_alphanumeric}:{password}
+```
+
+**Example of a Sticky Proxy**
+```
+mobile.byteful.com:8000:stevejobs_s_we12NkllMSS:apple123
+```
+
+#### Session TTL (Time to Live)
+
+You can maintain the same IP address for a specific duration by adding a TTL parameter in this format: ``_ttl_{number}{unit}`` to the username field of the proxy. The unit can be `m` for minutes, `h` for hours or `d` for days. The session TTL parameter must be accompanied by a session ID.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_s_{random_alphanumeric}_ttl_{number}{unit}:{password}
+```
+
+**Examples of Session TTL Proxy**
+```
+mobile.byteful.com:8000:stevejobs_s_we12NkllMSS_ttl_30m:apple123
+mobile.byteful.com:8000:stevejobs_s_we12NkllMSS_ttl_2h:apple123
+mobile.byteful.com:8000:stevejobs_s_we12NkllMSS_ttl_1d:apple123
+```
+
+<Tip>The minimum TTL is **1 minute** and the maximum TTL is **7 days**. By default we try to hold the IP for as long as possible (7 days).</Tip>
+<Warning> While TTL parameters allow you to specify how long to maintain the same IP address, mobile nodes cannot be guaranteed to be online for the entire duration. The IP address might change if the mobile device goes offline before the TTL expires.</Warning>
+
+### Enabling Smartpath
+
+[Smartpath®](/general/using-smartpath-mobile) is an intelligent, AI-driven proxy routing feature designed to optimize your mobile proxy data usage by dynamically routing traffic through mobile or datacenter IPs.
+
+You can easily enable Smartpath through the mobile generator or adding `_smartpath` to your proxy username field after your proxy_user_id.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_smartpath:{password}
+```
+
+**Example of a Smartpath Proxy**
+```
+mobile.byteful.com:8000:stevejobs_smartpath:apple123
+```
+
+<Tip>
+Smartpath is compatiable with all other mobile proxy parameters, however, if Smartpath classifies a request as not requiring mobile IP address then it does not respect other parameters and instead, routes the request through a datacenter proxy.
+</Tip>
+
+### Country Targeting
+
+You can make a proxy have a IP address from a specific country by adding a country ISO 3166 code in this format: `_c_{country_iso_code}` to the username field of the proxy. Any requests with using a proxy with the ISO code will return a proxy with an IP address from the selected country.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_c_{country_iso_code}:{password}
+```
+
+**Example of a United Kingdom Proxy**
+```
+mobile.byteful.com:8000:stevejobs_c_gb:apple123
+```
+### State Targeting
+
+You can make a proxy have a IP address from a specific state by adding the state name in this format: `_state_{state_name}` to the username field of the proxy. Any requests with using a proxy with the state will return a proxy with an IP address from the selected state.
+
+You can find out a full list of available state and their names via the dashboard or via the API where you can find all US states through the `/subdivision/search` endpoint while filtering by `country_id=us`.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_c_us_state_{state_name}:{password}
+```
+
+**Example of a Florida Proxy**
+```
+mobile.byteful.com:8000:stevejobs_c_us_state_florida:apple123
+```
+
+### City Targeting
+
+You can make a proxy have a IP address from a specific city by adding city name or alias in this format: `_city_{city_alias}` to the username field of the proxy. Any requests with using a proxy with the city alias will return a proxy with an IP address from the selected city.
+
+You can find out a full list of available cities and their alias via the dashboard.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_c_{country_iso_code_of_city}_city_{city_alias}:{password}
+```
+
+**Example of a London Proxy**
+```
+mobile.byteful.com:8000:stevejobs_c_gb_city_london:apple123
+```
+### Zip Code Targeting
+
+You can make a proxy have a IP address from a specific ZIP code ID to the proxy in this format: `_zip_{zip_code_id}` to the username field of the proxy. Any requests with using a proxy with the ZIP code ID will return a proxy with an IP address from the selected ZIP code.
+
+You can find out a full list of available ZIP codes and their ID's via the dashboard or via the API where we have a `/zip_code/search` endpoint.
+
+Since ZIP codes represent a very specific, limited population area, it is unlikely we will have a large number of proxies online from every ZIP code at a single time. You can overcome this issue by ensuring the ZIP code you are targeting has currently online proxies using our `/mobile_availability/search` endpoint and filtering by `zip_code_id`. Alternatively, you can see an interactive, live view of all ZIP codes and their current node count on the mobile dashboard.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_c_{country_iso_code_of_zip_code}_zip_{zip_code_id}:{password}
+```
+
+**Example of a ZIP Code 32808 Proxy**
+```
+mobile.byteful.com:8000:stevejobs_c_us_zip_32808:apple123
+```
+
+### ASN Targeting
+
+You can make a proxy have a IP address from a specific ASN / Carrier by adding ASN in this format: `_asn_{asn_number}` to the username field of the proxy. Any requests with using a proxy with the ASN number will return a proxy with an IP address from that network.
+
+You can find out a full list of available carriers and ASNs via the dashboard.
+
+**Format**
+```
+mobile.byteful.com:8000:{username}_asn_{asn_number}:{password}
+```
+
+**Example of a AT&T Proxy**
+```
+mobile.byteful.com:8000:stevejobs_asn_7018:apple123
+```
+
+### Combined Targeting
+
+You can combine any of the above targeting methods together to your proxy information to further limit the IP Addresses of your proxies.
+
+**Example of a AT&T Proxy in Charlotte, NC USA**
+```
+mobile.byteful.com:8000:stevejobs_c_us_city_charlotte_asn_7018:apple123
+```
+
+**Example of a Sticky AT&T Proxy in Charlotte, NC USA**
+```
+mobile.byteful.com:8000:stevejobs_c_us_city_charlotte_asn_7018_s_h12kJsas129:apple123
+```
+
+**Example of a Sticky United Kingdom Proxy**
+```
+mobile.byteful.com:8000:stevejobs_c_gb_s_dvnwcNOod12312s:apple123
+```
+
+## API Generation
+
+You can also generate mobile proxies programmatically using our API:
+
+<Card title="Generate Mobile Proxies via API" icon="code" href="/api-examples/generate-mobile-proxies-sticky-us">
+  Learn how to generate mobile proxies using the API with code examples in Python, JavaScript, PHP, Go, and Java.
+</Card>

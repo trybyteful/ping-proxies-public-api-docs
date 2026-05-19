@@ -1,0 +1,61 @@
+---
+title: 'Proxy Types Overview'
+description: 'This guide explains the different proxy types available through Byteful, helping you choose the right option for your needs.'
+---
+
+Byteful offers Dedicated Datacenter, Dedicated Static Residential ISP, Residential, and Mobile proxies.
+
+| Feature | Datacenter | Static Residential ISP | Residential | Mobile |
+|---------|------------|------------------------|-------------|--------|
+| IP Type | Datacenter | ISP-assigned consumer | Real residential | Mobile carrier |
+| Ownership | Dedicated | Dedicated | Shared | Shared |
+| Speed | Very fast | Very fast | Moderate (varies) | Moderate (varies) |
+| Stability | Highly stable | Highly stable | Variable | Variable |
+| Detection Risk | Higher | Low | Very low | Very low |
+| IP Rotation | Fixed IPs | Fixed IPs | Supports rotation | Supports rotation |
+| Geo-targeting | Country-level | Country-level | City & carrier-level | City & carrier-level |
+| Pricing Model | Per proxy | Per proxy | Data-based | Data-based |
+| Access Control | Proxy User Service Restriction | Proxy User Service Restriction | Proxy User Data Limit | Proxy User Data Limit |
+| API Access | /proxy/search | /proxy/search | /residential/list | /mobile/list |
+| API Proxy Type | `datacenter` | `isp` | `residential` | `mobile` |
+
+### Datacenter Proxies
+- **Source**: Commercial datacenters
+- **Key Benefits**: Highest speed (1Gbps+), very stable connections
+- **Pricing**: Per proxy with unlimited data
+- **Best For**: High-speed data collection where pure performance matters most
+
+### Static Residential ISP Proxies
+- **Source**: Major Internet Service Providers
+- **Key Benefits**: Balance of legitimacy and performance, fixed IPs with ISP credibility
+- **Pricing**: Per proxy with unlimited data
+- **Best For**: E-commerce automation, social media management, SEO monitoring
+
+### Residential Proxies
+- **Source**: Real consumer connections
+- **Key Benefits**: Maximum legitimacy, rotating IPs, finest geo-targeting
+- **Pricing**: Data-based (pay for what you use)
+- **Best For**: Accessing geo-restricted content, price comparison, brand protection
+
+### Mobile Proxies
+- **Source**: Real mobile devices
+- **Key Benefits**: Maximum legitimacy, rotating IPs, carrier-level targeting
+- **Pricing**: Data-based (pay for what you use)
+- **Best For**: Mobile app testing, mobile-specific content access, carrier-specific testing
+
+## Choosing the Right Type
+
+- Choose **Datacenter** for raw speed and reliability at lower cost
+- Choose **Static Residential ISP** for the best balance of legitimacy and performance
+- Choose **Residential** for maximum legitimacy and rotating IPs
+- Choose **Mobile** for mobile carrier IPs and mobile-specific use cases
+
+## Getting Available Products
+
+You can retrieve available product options using the catalog endpoint:
+
+```
+GET /public/user/checkout/catalog
+```
+
+This endpoint returns all available products with their pricing, features, and availability without requiring complex search parameters.

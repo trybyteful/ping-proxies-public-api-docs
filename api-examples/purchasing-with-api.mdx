@@ -1,0 +1,419 @@
+---
+title: "Purchasing Static Residential Proxies via the API"
+description: "Learn how to purchase static residential proxies via the API and export them to a text file"
+icon: "cart-shopping"
+---
+This guide demonstrates how to programmatically purchase static residential proxies through the Byteful API and then export them to a text file. The process involves:
+
+1. Getting product information using the catalog endpoint
+2. Creating a checkout for static residential proxies
+3. Exporting the proxies to a text file using `list_by_search`
+
+## Prerequisites
+
+Before you begin, you'll need:
+- Your Byteful API keys (both public and private)
+- Enough credit balance in your account or a payment method set up
+
+## Implementation Examples
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+# For this example, we'll directly use US static residential proxies
+product_code = "isp_us"  # Change this to your desired product code
+quantity = 5  # Change this to your desired quantity
+
+# Step 2: Create a checkout
+checkout_url = f"{BASE_URL}/user/checkout/create"
+checkout_payload = {
+    "product_code": product_code,
+    "quantity": quantity,
+    "cycle_interval": "month",
+    "cycle_interval_count": 1
+}
+
+checkout_response = requests.post(checkout_url, headers=headers, json=checkout_payload)
+
+if checkout_response.status_code != 201:
+    print(f"Error creating checkout: {checkout_response.status_code}")
+    print(checkout_response.text)
+    exit(1)
+
+checkout_data = checkout_response.json()
+print(f"Checkout created successfully!")
+
+# Extract service ID directly from the response
+service_id = checkout_data["data"]["service_id"]
+print(f"Service ID: {service_id}")
+
+# In a production environment, you might want to add a polling mechanism
+# to check if the service is active before proceeding
+# time.sleep(10)  # Simple wait - replace with polling in production
+
+# Step 3: Export proxies to a text file using list_by_search
+export_url = f"{BASE_URL}/user/proxy/list_by_search"
+export_params = {
+    "service_id": service_id,
+    "list_format": "http",  # Format: http, socks5, socks5h, or standard
+    "list_protocol": "http",  # Protocol: http or socks5
+    "list_authentication": "username_and_password"  # Authentication type
+}
+
+export_response = requests.get(export_url, headers=headers, params=export_params)
+
+if export_response.status_code != 200:
+    print(f"Error exporting proxies: {export_response.status_code}")
+    print(export_response.text)
+    exit(1)
+
+export_data = export_response.json()
+proxies = export_data["data"]
+
+# Write proxies to a text file
+filename = f"{product_code}_proxies.txt"
+with open(filename, "w") as f:
+    for proxy in proxies:
+        f.write(f"{proxy}\n")
+
+print(f"Successfully exported {len(proxies)} proxies to {filename}")
+```
+
+```javascript JavaScript
+const axios = require('axios');
+const fs = require('fs');
+
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY,
+  'Content-Type': 'application/json'
+};
+
+// For this example, we'll directly use US static residential proxies
+const productCode = 'isp_us';  // Change this to your desired product code
+    const quantity = 5;  // Change this to your desired quantity
+
+    // Step 2: Create a checkout
+    return axios.post(`${BASE_URL}/user/checkout/create`, {
+      product_code: productCode,
+      quantity: quantity,
+      cycle_interval: 'month',
+      cycle_interval_count: 1
+    }, { headers });
+  })
+  .then(checkoutResponse => {
+    console.log('Checkout created successfully!');
+    const checkoutData = checkoutResponse.data;
+    
+    // Extract service ID directly from the response
+    const serviceId = checkoutData.data.service_id;
+    console.log(`Service ID: ${serviceId}`);
+      
+      // In a production environment, you might want to add a polling mechanism
+      // to check if the service is active before proceeding
+      // setTimeout(() => { ... }, 10000);  // Simple wait - replace with polling in production
+      
+      // Step 3: Export proxies to a text file using list_by_search
+      return axios.get(`${BASE_URL}/user/proxy/list_by_search`, {
+        headers,
+        params: {
+          service_id: serviceId,
+          list_format: 'http',  // Format: http, socks5, socks5h, or standard
+          list_protocol: 'http',  // Protocol: http or socks5
+          list_authentication: 'username_and_password'  // Authentication type
+        }
+      });
+    } else {
+      throw new Error('No service ID found in the response.');
+    })
+  .then(exportResponse => {
+    const exportData = exportResponse.data;
+    const proxies = exportData.data;
+    const productCode = 'isp_us';  // Same as above
+    
+    // Write proxies to a text file
+    const filename = `${productCode}_proxies.txt`;
+    fs.writeFileSync(filename, proxies.join('\n'));
+    
+    console.log(`Successfully exported ${proxies.length} proxies to ${filename}`);
+  })
+  .catch(error => {
+    if (error.response) {
+      console.error(`Error: ${error.response.status}`);
+      console.error(error.response.data);
+    } else {
+      console.error(`Error: ${error.message}`);
+    }
+  });
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey,
+    'Content-Type: application/json'
+];
+
+// For this example, we'll directly use US static residential proxies
+$productCode = 'isp_us';  // Change this to your desired product code
+$quantity = 5;  // Change this to your desired quantity
+
+// Step 2: Create a checkout
+$checkoutUrl = $baseUrl . '/user/checkout/create';
+$checkoutPayload = json_encode([
+    'product_code' => $productCode,
+    'quantity' => $quantity,
+    'cycle_interval' => 'month',
+    'cycle_interval_count' => 1
+]);
+
+$ch = curl_init($checkoutUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $checkoutPayload);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+$checkoutResponse = curl_exec($ch);
+$checkoutStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($checkoutStatusCode != 201) {
+    echo "Error creating checkout: " . $checkoutStatusCode . "\n";
+    echo $checkoutResponse . "\n";
+    exit(1);
+}
+
+$checkoutData = json_decode($checkoutResponse, true);
+echo "Checkout created successfully!\n";
+
+// Extract service ID directly from the response
+$serviceId = $checkoutData['data']['service_id'];
+echo "Service ID: " . $serviceId . "\n";
+
+// In a production environment, you might want to add a polling mechanism
+// to check if the service is active before proceeding
+// sleep(10);  // Simple wait - replace with polling in production
+
+// Step 3: Export proxies to a text file using list_by_search
+$exportUrl = $baseUrl . '/user/proxy/list_by_search?' . http_build_query([
+    'service_id' => $serviceId,
+    'list_format' => 'http',  // Format: http, socks5, socks5h, or standard
+    'list_protocol' => 'http',  // Protocol: http or socks5
+    'list_authentication' => 'username_and_password'  // Authentication type
+]);
+
+$ch = curl_init($exportUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+$exportResponse = curl_exec($ch);
+$exportStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($exportStatusCode != 200) {
+    echo "Error exporting proxies: " . $exportStatusCode . "\n";
+    echo $exportResponse . "\n";
+    exit(1);
+}
+
+$exportData = json_decode($exportResponse, true);
+$proxies = $exportData['data'];
+
+// Write proxies to a text file
+$filename = $productCode . '_proxies.txt';
+file_put_contents($filename, implode("\n", $proxies));
+
+echo "Successfully exported " . count($proxies) . " proxies to " . $filename . "\n";
+?>
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+)
+
+func main() {
+	// API credentials
+	apiPublicKey := "your_public_key"
+	apiPrivateKey := "your_private_key"
+	baseURL := "https://api.byteful.com/1.0/public"
+
+	// Create HTTP client
+	client := &http.Client{}
+
+	// For this example, we'll directly use US static residential proxies
+	productCode := "isp_us" // Change this to your desired product code
+	quantity := 5           // Change this to your desired quantity
+
+	// Step 2: Create a checkout
+	checkoutURL := fmt.Sprintf("%s/user/checkout/create", baseURL)
+	checkoutPayload := map[string]interface{}{
+		"product_code":          productCode,
+		"quantity":              quantity,
+		"cycle_interval":        "month",
+		"cycle_interval_count":  1,
+	}
+
+	// Convert payload to JSON
+	payloadBytes, err := json.Marshal(checkoutPayload)
+	if err != nil {
+		fmt.Printf("Error creating checkout payload: %v\n", err)
+		return
+	}
+
+	// Create checkout request
+	checkoutReq, err := http.NewRequest("POST", checkoutURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		fmt.Printf("Error creating checkout request: %v\n", err)
+		return
+	}
+
+	// Add headers
+	checkoutReq.Header.Add("X-API-Public-Key", apiPublicKey)
+	checkoutReq.Header.Add("X-API-Private-Key", apiPrivateKey)
+	checkoutReq.Header.Add("Content-Type", "application/json")
+
+	// Execute the checkout request
+	checkoutResp, err := client.Do(checkoutReq)
+	if err != nil {
+		fmt.Printf("Error executing checkout request: %v\n", err)
+		return
+	}
+	defer checkoutResp.Body.Close()
+
+	if checkoutResp.StatusCode != 201 {
+		body, _ := ioutil.ReadAll(checkoutResp.Body)
+		fmt.Printf("Error creating checkout: %d\n", checkoutResp.StatusCode)
+		fmt.Println(string(body))
+		return
+	}
+
+	// Parse the checkout response
+	var checkoutData map[string]interface{}
+	if err := json.NewDecoder(checkoutResp.Body).Decode(&checkoutData); err != nil {
+		fmt.Printf("Error parsing checkout response: %v\n", err)
+		return
+	}
+
+	fmt.Println("Checkout created successfully!")
+
+	// Extract service ID directly from the response
+	serviceIdData := checkoutData["data"].(map[string]interface{})
+	serviceId := serviceIdData["service_id"].(string)
+	fmt.Printf("Service ID: %s\n", serviceId)
+
+	// In a production environment, you might want to add a polling mechanism
+	// to check if the service is active before proceeding
+	// time.Sleep(10 * time.Second)  // Simple wait - replace with polling in production
+
+	// Step 3: Export proxies to a text file using list_by_search
+	exportURL := fmt.Sprintf("%s/user/proxy/list_by_search?service_id=%s&list_format=http&list_protocol=http&list_authentication=username_and_password",
+		baseURL, serviceId)
+	
+	exportReq, err := http.NewRequest("GET", exportURL, nil)
+	if err != nil {
+		fmt.Printf("Error creating export request: %v\n", err)
+		return
+	}
+
+	// Add authentication headers
+	exportReq.Header.Add("X-API-Public-Key", apiPublicKey)
+	exportReq.Header.Add("X-API-Private-Key", apiPrivateKey)
+
+	// Execute the export request
+	exportResp, err := client.Do(exportReq)
+	if err != nil {
+		fmt.Printf("Error exporting proxies: %v\n", err)
+		return
+	}
+	defer exportResp.Body.Close()
+
+	if exportResp.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(exportResp.Body)
+		fmt.Printf("Error exporting proxies: %d\n", exportResp.StatusCode)
+		fmt.Println(string(body))
+		return
+	}
+
+	// Parse the export response
+	var exportData map[string]interface{}
+	if err := json.NewDecoder(exportResp.Body).Decode(&exportData); err != nil {
+		fmt.Printf("Error parsing export response: %v\n", err)
+		return
+	}
+
+	// Extract proxies
+	proxiesRaw := exportData["data"].([]interface{})
+	proxies := make([]string, len(proxiesRaw))
+	for i, p := range proxiesRaw {
+		proxies[i] = p.(string)
+	}
+
+	// Write proxies to a text file
+	filename := fmt.Sprintf("%s_proxies.txt", productCode)
+	err = ioutil.WriteFile(filename, []byte(strings.Join(proxies, "\n")), 0644)
+	if err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Successfully exported %d proxies to %s\n", len(proxies), filename)
+}
+```
+</CodeGroup>
+
+## Process Overview
+
+1. **Product Selection**: 
+   - We directly use the product code for US static residential proxies ("isp_us")
+   - You can find available product codes in your dashboard or using the catalog endpoint
+
+2. **Checkout Creation**:
+   - We create a checkout using the product code, quantity, and billing cycle
+   - The API returns a service ID which we'll use to access our proxies
+
+3. **Proxy Export**:
+   - Once the purchase is complete, we use the `list_by_search` endpoint to get our proxies
+   - We filter by service ID and specify the format we want (HTTP in this example)
+   - Finally, we save the proxies to a text file
+   
+## Additional Considerations
+
+- In a production environment, implement a polling mechanism to check if the service is active before attempting to export proxies
+- The default proxy user credentials are used in this example
+- You may want to create a custom proxy user for better organization and access control

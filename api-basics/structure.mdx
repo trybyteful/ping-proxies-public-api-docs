@@ -1,0 +1,246 @@
+---
+title: 'Structure'
+description: 'Understanding the Byteful API structure, URL patterns, HTTP methods, and data formats'
+---
+
+The Byteful API follows RESTful principles with consistent URL patterns, standard HTTP methods, and JSON-formatted requests and responses. This page explains the core structural components of the API.
+
+## Base URL
+
+All API requests should be made to the following base URL:
+
+```
+https://api.byteful.com/1.0/
+```
+
+## URL Structure
+
+The API URLs follow a consistent pattern:
+
+```
+/[version]/[scope]/[resource]/[action]/[identifier]
+```
+
+### Components
+
+| Component | Description | Examples |
+|-----------|-------------|----------|
+| `version` | API version | `1.0` |
+| `scope` | Access level | `public`, `private` |
+| `resource` | The resource type | `proxy`, `service`, `proxy_user` |
+| `action` | Operation to perform | `retrieve`, `search`, `create`, `edit` |
+| `identifier` | Resource ID (when applicable) | `{proxy_id}`, `{service_id}` |
+
+All Public API therefore follow this URL format:
+
+```
+https://api.byteful.com/1.0/public/user/[resource]/[action]/[identifier]
+```
+
+
+### Example URLs
+
+```
+/1.0/public/user/proxy/search
+/1.0/public/user/proxy/retrieve/{proxy_id}
+/1.0/public/user/proxy_user/create
+/1.0/public/user/service/edit/{service_id}
+```
+
+## HTTP Methods
+
+The API uses standard HTTP methods to perform different actions:
+
+| Method | Description | Example Usage |
+|--------|-------------|---------------|
+| `GET` | Retrieve data | Fetch a proxy, list services, search resources |
+| `POST` | Create data | Create a new proxy user, generate a checkout |
+| `PATCH` | Update data | Edit a proxy user, update service metadata |
+| `DELETE` | Remove data | Cancel a service, delete a proxy user |
+
+<Warning>
+  **Inconsistent HTTP Method**: The route `POST /public/user/proxy/list_by_id` violates the established HTTP method convention.
+According to the convention, retrieval operations should use the GET method, but this endpoint uses POST for a retrieval operation. This is an intentional deviation to support sending large lists of UUIDs in the request body, which wouldn't be practical with query parameters in a GET request.
+</Warning>
+
+### Method and URL Mapping
+
+The HTTP method and URL structure work together to define the operation:
+
+| Operation | HTTP Method | URL Pattern | Example |
+|-----------|-------------|-------------|---------|
+| List/Search | `GET` | `/resource/search` | `GET /proxy/search` |
+| Retrieve | `GET` | `/resource/retrieve/{id}` | `GET /proxy/retrieve/123` |
+| Create | `POST` | `/resource/create` | `POST /proxy_user/create` |
+| Update | `PATCH` | `/resource/edit/{id}` | `PATCH /proxy/edit/123` |
+| Delete | `DELETE` | `/resource/delete/{id}` or `/resource/cancel/{id}` | `DELETE /proxy_user/delete/123` |
+
+## Request Format
+
+### Headers
+
+All requests should include the following headers:
+
+| Header | Description | Required |
+|--------|-------------|----------|
+| `X-API-Public-Key` | Your public API key | Yes |
+| `X-API-Private-Key` | Your private API key | Yes |
+| `Content-Type` | `application/json` for requests with a body | For POST/PATCH |
+
+### Request Body
+
+For `POST` and `PATCH` requests, data should be sent as JSON in the request body:
+
+```json
+{
+  "proxy_user_id": "example_user",
+  "proxy_user_password": "secure_password",
+  "proxy_user_metadata": {
+    "department": "Marketing",
+    "project": "Q2 Campaign"
+  }
+}
+```
+
+### Query Parameters
+
+For `GET` requests, parameters are passed in the URL query string:
+
+```
+/proxy/search?country_id=us&proxy_type=datacenter&page=1&per_page=25
+```
+
+Common query parameters include:
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `page` | Page number for pagination | `page=2` |
+| `per_page` | Items per page | `per_page=50` |
+| `sort_by` | Field to sort by with optional direction | `sort_by=creation_datetime_desc` |
+
+## Response Format
+
+All API responses are JSON objects with a consistent structure:
+
+```json
+{
+  "data": {
+    // Resource data or array of resources
+  },
+  "message": "Operation successful message",
+  "page": 1,           // Only in paginated responses
+  "per_page": 25,      // Only in paginated responses
+  "total_count": 157,  // Only in paginated responses
+  "item_count": 25     // Only in paginated responses
+}
+```
+
+### Success Responses
+
+Successful responses include:
+
+- HTTP status code in the 200 range
+- `data` field containing the requested resource(s)
+- `message` field with a success message
+
+Example of a successful retrieve operation:
+
+```json
+{
+  "data": {
+    "proxy_id": "abc123",
+    "proxy_ip_address": "192.168.1.1",
+    "proxy_status": "active"
+    // Additional fields...
+  },
+  "message": "Proxy successfully retrieved."
+}
+```
+
+Example of a successful search operation:
+
+```json
+{
+  "data": [
+    {
+      "proxy_id": "abc123",
+      "proxy_ip_address": "192.168.1.1"
+      // Additional fields...
+    },
+    {
+      "proxy_id": "def456",
+      "proxy_ip_address": "192.168.1.2"
+      // Additional fields...
+    }
+  ],
+  "message": "Proxy search successful.",
+  "page": 1,
+  "per_page": 25,
+  "total_count": 157,
+  "item_count": 25
+}
+```
+
+### Error Responses
+
+Error responses include:
+
+- HTTP status code in the 400 or 500 range
+- `error` field with the error type
+- `message` field with a description of the error
+- `api_request_id` field for reference when contacting support
+
+Example error response:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The proxy_user_id field is required.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+## HTTP Status Codes
+
+The API uses standard HTTP status codes to indicate the result of a request:
+
+| Code | Description | Common Scenarios |
+|------|-------------|------------------|
+| 200 | OK | Successful GET, PATCH operations |
+| 201 | Created | Successful POST operation |
+| 400 | Bad Request | Invalid parameters or data |
+| 401 | Unauthorized | Invalid or missing authentication |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource doesn't exist |
+| 409 | Conflict | Resource already exists |
+| 422 | Unprocessable Entity | Valid request but operation failed due to business logic |
+| 500 | Internal Server Error | Server-side error |
+
+## Data Types
+
+The API uses standard JSON data types:
+
+| Type | JSON Representation | Example |
+|------|---------------------|---------|
+| String | `"text"` | `"proxy_type": "datacenter"` |
+| Number | `123` or `123.45` | `"proxy_http_port": 8080` |
+| Boolean | `true` or `false` | `"proxy_user_is_strict_security": true` |
+| Object | `{ "key": "value" }` | `"proxy_user_metadata": { "department": "Marketing" }` |
+| Array | `[ value1, value2 ]` | `"restricted_service_ids": ["123-456", "789-012"]` |
+| Null | `null` | `"service_promotional_code": null` |
+| Datetime | `2023-09-15 00:00:00` | `"service_creation_datetime": "2023-09-15 00:00:00"` |
+
+
+## Date and Time Format
+
+All date and time values in the API use the format below:
+
+```
+YYYY-MM-DDT hh:mm:ss
+```
+
+Example: `"2023-09-15 14:30:00"`
+
+When filtering by dates, you can use:
+- Format: `2023-09-15 14:30:00`
+- Date only: `2023-09-15`

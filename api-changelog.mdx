@@ -1,0 +1,110 @@
+---
+title: API Changelog
+description: "What we've changed and added to Byteful. A straightforward timeline of our improvements."
+---
+<Update label="1.5.35">
+
+  ## Analytics Changes
+
+  * We may now summarise hostnames in the format *.hostname.TLD when we detect high cardinality between a large number of hostnames. This will improve observability performance for customers with lots of logs.
+
+</Update>
+<Update label="1.5.34">
+
+  ## Proxy List Options & Proxy User ID Search
+
+  * Added proxy list options for more flexible proxy listing configurations.
+
+  * Added ability to search proxies by proxy user ID.
+
+</Update>
+<Update label="1.5.33">
+
+  ## Bug Fixes & Minor Improvements
+    
+  * Fixed analytics route hourly interval bug
+
+</Update>
+<Update label="1.5.32">
+
+  ## Improved Proxy User Authentication System, Speed Improvements & Bug Fixs
+
+  * Added Proxy User ACL routes for fine grained proxy user access control by service ID or proxy ID.
+  
+  * Stock retrieval is now much faster. This speeds up several endpoints.
+
+  * Customer promotion system added.
+  
+  * Various bugs fixed.
+
+</Update>
+<Update label="1.5.21">
+
+  ## Proxy Testing add to API
+
+  * Endpoint added to search for available proxy testing servers
+  
+  * Endpoint added to create a proxy test run and test proxies against a list of URL's
+
+</Update>
+<Update label="1.3.3">
+
+  ## Residential Availability Counts added to API
+    
+  * Endpoints added to view online peer counts by country, state, asn and other variables.
+
+  ## New Residential Generation Options Added
+    
+  * Residential list generation endpoint now supports US States and global zip codes along with AI Optimization features.
+
+  ## Breakdown Analytics Endpoint Added
+    
+  * Endpoint which provides proxy analytics broken down by hostname, proxy user and network.
+
+</Update>
+<Update label="1.2.2">
+
+  ## KYC Support Added
+    
+  * Changes to customer object to support KYC levels and verification. KYC level can be seen in the public API but verifications must be initiated via the dashboard.
+
+  ## Bug Fixes & Minor Improvements
+    
+  * Pagination total_count value now supports -1 value to indicate large number of objects which can not be fully counted.
+
+</Update>
+
+<Update label="1.1.2">
+
+  ## Bug Fixes & Minor Improvements
+    
+  * Fixed error responses and formating in specific routes
+
+</Update>
+
+<Update label="1.1.1">
+
+  ## Bug Fixes
+    
+  * Repeated automatic overage refund bug fixed
+
+</Update>
+
+<Update label="1.1.0">
+
+  ## Automatic Overage Refunds
+    
+  * Data overages, where bytes exceed an opposed limit, are now refunded via automatic entries to the residential ledgr with type `overage_adjustment`
+
+</Update>
+
+<Update label="1.0.0">
+
+  ## Bug Fixes & Minor Improvements
+    
+  * Fixed subnet_id proxy filtering issue
+  * Apply default sorting rules for all objects based on alphabetical name order or creation datetime desc, depending 
+  * Fixes to Checkout API endpoints and service_fulfillment_filter searching
+  * Proxy object updates to show proxy_user_ids list
+
+</Update>

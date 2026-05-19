@@ -1,0 +1,115 @@
+---
+title: 'Debugging Proxy Errors'
+description: 'Learn how to identify and resolve proxy request failures using the Live Log Viewer and `x-byteful-request-id` header.'
+---
+
+Understanding and resolving failed proxy requests is crucial to maintaining reliable infrastructure. We provide a powerful [**Live Log Viewer**](https://dashboard.byteful.com/observability/live) combined with traceable request identifiers to help you debug issues efficiently and in real time.
+
+## Identifying Failed Requests
+
+Every authenticated request that passes through our network includes a special response header:
+
+```http
+x-byteful-request-id: 90c1d76f-4551-4d15-9087-b37421d6b7c7
+```
+
+This `x-byteful-request-id` is a unique identifier tied to that request's **Log ID** in the [Live Network Activity Viewer](/general/live-network-activity#live-network-activity). You can use this ID to locate and inspect the exact request, its metadata, and its outcome.
+
+## Debugging with cURL
+
+You can inspect your proxy request headers and outcomes using the `curl` CLI. Below is an example of a successful proxy tunnel request, which returns an `x-byteful-request-id` header:
+
+```bash
+curl --proxy 124.103.51.11:8000 --proxy-user example_user:example_pass --verbose https://ipinfo.io
+```
+
+Example output (truncated for readability):
+
+```
+> CONNECT ipinfo.io:443 HTTP/1.1
+> Proxy-Authorization: Basic ZXhhbXBsZV91c2VyOmV4YW1wbGVfcGFzcw==
+< HTTP/1.1 200 OK
+< x-byteful-request-id: 90c1d76f-4551-4d15-9087-b37421d6b7c7
+< x-byteful-status-code: 200
+< x-byteful-warp-enabled: true
+< x-byteful-exit-ip: 104.172.201.223
+...
+```
+
+You can now go to the **Live Activity** section in your dashboard, locate the Log ID `90c1d76f-4551-4d15-9087-b37421d6b7c7`, and inspect:
+
+- Network used
+- Proxy IP address
+- Target domain
+- Duration and bytes
+- Internal error code (if failed)
+
+
+### Headers
+All responses from Byteful will contain the following headers:
+
+| Header | Type | Meaning |
+|--------|------|---------|
+| `x-byteful-request-id` | `UUIDv4` | The unique ID of the request for cross-referencing in the dashboard. |
+| `x-byteful-status-code` | `u16` | The Byteful code (error or success) associated with this request. |
+| `x-byteful-warp-enabled` | `bool` | Wether or not your request was sped up using our WARP pathing technology. |
+| `x-byteful-exit-ip` | `IPv4` | The IP your request is proxied through. Occassionaly, we cannot retrieve this in time, in which case it defaults to `0.0.0.0`. |
+
+## Common Codes and Troubleshooting
+We do not expose HTTP status codes due to TLS encryption. Instead, errors are represented by 4 digit internal codes shown in the [**Live Network Activity Viewer**](https://dashboard.byteful.com/observability/live).
+
+The last digit of this internal code code is used to aid debugging by our support team and is not necessary for the customer to understand. As such, we display the last digit as `x` in this table.
+
+# Byteful Customer Error Reference
+
+| Dashboard Code | HTTP Code | Message |
+|----------------|-----------|---------|
+| <span className="code-tag success">200</span> | `200 `| Success |
+| <span className="code-tag success">301</span> | `301 `| Redirecting to different target |
+| <span className="code-tag error">100x</span> to <span className="code-tag error">200x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">201x</span> to <span className="code-tag error">203x</span> | `407` | Invalid proxy credentials. Please check your username and password and try again. |
+| <span className="code-tag error">206x</span> | `400` | Invalid username parameters provided. Please check your proxy username format and try again. |
+| <span className="code-tag error">207x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">310x</span> to <span className="code-tag error">312x</span> | `502` | Failed to reach target. Please try again or contact support@byteful.com if this error persists. |
+| <span className="code-tag error">314x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">315x</span> | `400` | The target hostname provided is invalid. Please check the target URL and try again. |
+| <span className="code-tag error">316x</span> to <span className="code-tag error">317x</span> | `403` | You are accessing a restricted target. Please contact support@byteful.com if you believe this is incorrect. |
+| <span className="code-tag error">410x</span> | `500` | Connection terminated by Byteful. |
+| <span className="code-tag error">411x</span> to <span className="code-tag error">412x</span> | `403` | Exceeded maximum allowed connection duration. Please try again or contact support@byteful.com if this error persists. |
+| <span className="code-tag error">420x</span> | `429` | Exceeded maximum allowed rate of requests. Please reduce your request rate and try again. |
+| <span className="code-tag error">421x</span> | `429` | Concurrency limit exceeded. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">422x</span> | `429` | Data limit exceeded. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">423x</span> | `403` | Target website is blacklisted. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">450x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">451x</span> | `503` | No node found for given parameters. Please check your proxy username format and try again. |
+| <span className="code-tag error">452x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">500x</span> | `500` | Server failed to process request. Please try again or contact support@byteful.com if this error persists. |
+| <span className="code-tag error">501x</span> to <span className="code-tag error">502x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">800x</span> to <span className="code-tag error">810x</span> | `500` | Network communication error. Please try again or contact support@byteful.com if this error persists. |
+| <span className="code-tag error">820x</span> | `502` | Failed to reach target. Please try again or contact support@byteful.com if this error persists. |
+| <span className="code-tag error">821x</span> | `503` | No node found for given parameters. Please check your proxy username format and try again. |
+| <span className="code-tag error">900x</span> to <span className="code-tag error">901x</span> | `500` | Server encountered an error while proxying your request. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">902x</span> | `405` | Unsupported protocol method. Please contact support@byteful.com if this error persists. |
+| <span className="code-tag error">910x</span> | `400` | Error processing your request. Please check your request and try again. |
+
+### Suggested Fixes
+<<<<<<< HEAD
+- **Authentication Errors (`201x` to `203x`)**: Verify your proxy username and password. Double-check authentication format.
+- **Data or Connection Limits (`421x` or `423x`)**: Upgrade your plan or reduce simultaneous requests.
+- **Target Restricted (`423x`)**: The target website or port may be blocked by your plan or region. Try a different network or contact support.
+=======
+- **Authentication Errors (1000-1100, 1104)**: Verify your proxy username and password. Double-check authentication format.
+- **Data or Connection Limits (1102, 1103)**: Upgrade your plan or reduce simultaneous requests.
+- **Target Restricted (2002)**: The target website or port may be blocked by your plan or region. Try a different network or contact support.
+>>>>>>> mobile_proxies
+
+## Still Need Help?
+
+If you cannot resolve the issue using the Log ID and error code, please reach out to our support team with:
+
+- The full `x-byteful-request-id` (If within 7 days of the issue and request)
+- Target domain
+- Approximate timestamp
+- Proxy credentials used (if applicable)
+
+📩 **support@byteful.com**

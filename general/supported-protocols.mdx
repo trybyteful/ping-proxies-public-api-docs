@@ -1,0 +1,57 @@
+---
+title: 'Supported Protocols'
+description: 'Protocol support information for Byteful services'
+---
+
+All proxy services from Byteful support multiple protocols on the same port to ensure compatibility and ease of use with a wide range of applications.
+
+## Protocol Support Matrix
+The table below details the protocol support across our various proxy services:
+
+|        Service Type        | HTTP/S | SOCKS5 TCP | SOCKS5 UDP  |
+|----------------------------|--------|------------|-------------|
+| Datacenter Proxies         |   ✅   |     ✅     | Coming Soon |
+| Static Residential Proxies |   ✅   |     ✅     | Coming Soon |
+| Residential Data      |   ✅   |     ✅     | Coming Soon |
+| Mobile Data      |   ✅   |     ✅     | Coming Soon |
+
+
+## HTTP/S Support
+Our proxies support the tunneling of HTTPS connections. Both HTTP and HTTPS proxy connections tunnel HTTPS connections to SSL targets via the CONNECT method. Bytes flow through the connection to the target  website, encrypted and not visble for the proxy server to see. This is known as "HTTPS to the Target".
+
+- HTTPS to the Proxy means that when talking to our server to begin proxying, information such as your target website and your authentication credentials are encrypted. To do HTTPS to the Proxy, simply set "HTTPS" as the scheme in your proxy string (see tables  above for product support).
+
+- HTTPS to the Target means that when talking to your end website, all data is encrypted and unreadable to anyone but you. This inlcudes us, we cannot see what you are doing either. To do HTTPS to the Target, simply set the scheme of your desired website to "HTTPS". However, the initial communication with the proxy server, where authentication credentials and your desired target is provided, is unencrypted.
+
+<Note>
+To summarise, set the scheme of your proxy string to "HTTPS" to protect your proxy authentication credentials and set the scheme of your target  website to "HTTPS" to protect the data being sent between you and the target website.
+</Note>
+
+## SOCKS5 TCP Support
+All of our proxy services support SOCKS5 TCP connections, providing a versatile option for applications that require this protocol. SOCKS5 offers advantages for certain use cases where HTTP proxying might be insufficient.
+
+## Protocol Selection
+When connecting to our proxies, you can choose the protocol that best fits your needs:
+
+- Use *HTTP/S* for web browsing, data collection, and most general use cases
+- Use *SOCKS5 TCP* for applications that require TCP protocol support beyond HTTP
+
+
+<CardGroup cols={2}>
+  <Card
+    title = "Supported Protocol Versions"
+    icon = "gear-code"
+    href =  "/general/supported-protocol-versions"
+  >
+    Learn about supported protocol versions on different services. See where and how you can do HTTP/1.1, HTTP/2, HTTP/3 and SOCKS5 on our services.
+  </Card>
+
+  <Card
+    title = "Code Examples"
+    icon = "code"
+    href =  "/general/code-examples"
+  >
+	Learn how to establish HTTP/1.1, HTTP/2, HTTP3 and SOCKS5 proxy connections. See how you can tunnel all traffic types, including QUIC through Byteful services.
+  </Card>
+</CardGroup>
+

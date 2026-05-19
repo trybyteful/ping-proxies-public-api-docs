@@ -1,0 +1,104 @@
+---
+title: 'Geolocation Targeting'
+description: 'How to target specific countries and cities with mobile proxies'
+---
+
+Country and city geolocation targeting comes as standard with all mobile data purchases. We support over 195 countries and every major city in the world.
+
+You can generate proxies which are geolocated to specific countries or cities through both our dashboard generator and through syntax generation in your API requests.
+
+## Country Targeting
+
+When generating mobile proxies, you can specify the country using the ISO country code:
+
+```bash
+# Generate 5 proxies from the United States
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?country_id=us&list_count=5' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+This will return proxies exclusively from the specified country:
+
+```json
+{
+  "data": [
+    "socks5h://your_user_c_us_s_DDINPY7TQ0781XEO:your_password@mobile.byteful.com:8000",
+    "socks5h://your_user_c_us_s_XIINPY7TQ0781XEA:your_password@mobile.byteful.com:8000",
+    "socks5h://your_user_c_us_s_PPINPY7TQ0781XEB:your_password@mobile.byteful.com:8000",
+    "socks5h://your_user_c_us_s_QQINPY7TQ0781XEC:your_password@mobile.byteful.com:8000",
+    "socks5h://your_user_c_us_s_RRINPY7TQ0781XED:your_password@mobile.byteful.com:8000"
+  ],
+  "message": "Mobile list successfully created."
+}
+```
+
+## City Targeting
+
+For more precise targeting, you can generate proxies from specific cities:
+
+```bash
+# Generate 3 proxies from London, UK
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?country_id=gb&city_alias=london&list_count=3' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Response:
+
+```json
+{
+  "data": [
+    "socks5h://your_user_c_gb_city_london_s_DDINPY7TQ0781XEO:your_password@mobile.byteful.com:8000",
+    "socks5h://your_user_c_gb_city_london_s_XIINPY7TQ0781XEA:your_password@mobile.byteful.com:8000",
+    "socks5h://your_user_c_gb_city_london_s_PPINPY7TQ0781XEB:your_password@mobile.byteful.com:8000"
+  ],
+  "message": "Mobile list successfully created."
+}
+```
+
+Notice that the city information is encoded in the proxy string (`city_london`).
+
+## Subdivision Targeting
+
+You can also target specific subdivisions (states, provinces, regions) within countries:
+
+```bash
+# Generate 3 proxies from California, US
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?country_id=us&subdivision_id=us-ca&list_count=3' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Finding Available Cities
+
+To discover which cities are available within a country, you can use the city search endpoint:
+
+```bash
+# List cities in the United Kingdom
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/city/search?country_id=gb&city_is_populous=true' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Combining Geolocation with Other Filters
+
+For advanced targeting, you can combine geolocation with ISP/ASN targeting:
+
+```bash
+# Generate 3 proxies from AT&T (ASN 7018) in the US
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?country_id=us&asn_id=7018&list_count=3' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Dashboard Generation
+
+You can also easily generate geotargeted proxies through our dashboard interface by selecting the desired country and city from the dropdown menus in the mobile proxy generator.
+
+For more information on generating mobile proxies, see the [Generating Mobile Proxies](/general/generating-mobile-proxies) guide.
