@@ -1,0 +1,1508 @@
+---
+title: "Test a list of proxies"
+description: "Learn how to test a list of proxies, verify connectivity and performance and then output the results to a csv"
+icon: "microscope"
+---
+
+<CodeGroup>
+
+```python Python
+import requests
+import csv
+import uuid
+import random
+from datetime import datetime
+
+# API credentials
+API_PRIVATE_KEY = "your_private_key"
+API_PUBLIC_KEY = "your_public_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json",
+}
+
+
+def read_proxies_from_file(file_path):
+    """
+    Read proxy list from a text file
+
+    Args:
+        file_path: Path to the text file containing proxies
+
+    Returns:
+        List of proxy strings or empty list if file reading failed
+    """
+    try:
+        with open(file_path, "r") as file:
+            proxies = [line.strip() for line in file.readlines() if line.strip()]
+        print(f"Successfully loaded {len(proxies)} proxies from {file_path}")
+        return proxies
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found")
+        return []
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        return []
+
+
+def get_available_test_servers():
+    """
+    Get list of active proxy test servers
+
+    Returns:
+        List of available test servers or None if request failed
+    """
+    response = requests.get(
+        f"{BASE_URL}/proxy_test_server/search?proxy_test_server_active=true",
+        headers=headers,
+    )
+
+    if response.status_code != 200:
+        print(f"Error getting test servers: {response.status_code}")
+        print(response.text)
+        return None
+
+    data = response.json()
+    return data["data"]
+
+
+def create_bulk_proxy_test(
+    proxy_strings, test_server_id, target_url="https://byteful.com"
+):
+    """
+    Create a proxy test for multiple proxies against a target URL
+
+    Args:
+        proxy_strings: List of proxy strings in format "host:port:username:password"
+        test_server_id: ID of the proxy test server to use
+        target_url: URL to test the proxies against
+
+    Returns:
+        Test run ID or None if creation failed
+    """
+    test_run_id = str(uuid.uuid4())
+
+    # Create proxy list with unique IDs
+    proxies = []
+    for proxy_string in proxy_strings:
+        proxy_id = str(uuid.uuid4())
+        proxies.append({"proxy_id": proxy_id, "proxy_string": proxy_string})
+
+    # Create the request payload
+    payload = {
+        "proxies": proxies,
+        "proxy_tester_server_id": [test_server_id],
+        "proxy_test_run_id": test_run_id,
+        "urls": [target_url],
+    }
+
+    # Make request to create the proxy test
+    response = requests.post(
+        f"{BASE_URL}/proxy_test_run/create", json=payload, headers=headers
+    )
+
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+    data = response.json()
+    return data
+
+
+def write_results_to_csv(results, output_file):
+    """
+    Write proxy test results to CSV file
+
+    Args:
+        results: The test results from the API
+        output_file: Path to the output CSV file
+    """
+    if not results or "data" not in results:
+        print("No test results to write")
+        return
+
+    # Define CSV headers
+    headers_csv = [
+        "proxy_ip",
+        "proxy_port",
+        "is_successful",
+        "error_code",
+        "response_time_ms",
+        "proxy_city",
+        "proxy_country",
+    ]
+
+    try:
+        with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+
+            # Write headers
+            writer.writerow(headers_csv)
+
+            # Write data rows
+            for test_run_id, test_data in results["data"].items():
+                if "results" not in test_data:
+                    continue
+
+                for result in test_data["results"]:
+                    row = [
+                        result.get("proxy_tester_proxy_host", ""),
+                        result.get("proxy_tester_proxy_port", ""),
+                        result.get("proxy_test_result_is_successful", ""),
+                        result.get("proxy_test_result_error_code", ""),
+                        result.get("proxy_test_result_response_time", ""),
+                        result.get("proxy_tester_proxy_city_name", ""),
+                        result.get("proxy_tester_proxy_country_id", ""),
+                    ]
+                    writer.writerow(row)
+
+        print(f"Results successfully written to {output_file}")
+
+    except Exception as e:
+        print(f"Error writing to CSV: {e}")
+
+
+# Example usage
+if __name__ == "__main__":
+    # Configuration
+    PROXY_FILE = "proxies.txt"  # Text file with one proxy per line in format host:port:username:password
+    OUTPUT_CSV = f"proxy_test_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    TARGET_URL = "https://byteful.com"
+    BATCH_SIZE = 20
+
+    # Step 1: Read proxies from file
+    print("Reading proxies from file...")
+    proxy_list = read_proxies_from_file(PROXY_FILE)
+
+    if not proxy_list:
+        print(
+            "No proxies found in file. Please check the file exists and contains valid proxy strings."
+        )
+        exit(1)
+
+    # Step 2: Get available test servers
+    print("Getting available test servers...")
+    servers = get_available_test_servers()
+
+    if not servers:
+        print("Failed to get test servers")
+        exit(1)
+
+    # Use the first available server
+    test_server_id = random.choice(servers)["proxy_test_server_id"]
+    print(f"Using test server: {test_server_id}")
+
+    # Step 3: Process proxies in batches
+    all_results = {"data": {}}
+    for i in range(0, len(proxy_list), BATCH_SIZE):
+        batch = proxy_list[i : i + BATCH_SIZE]
+        batch_num = (i // BATCH_SIZE) + 1
+        total_batches = (len(proxy_list) + BATCH_SIZE - 1) // BATCH_SIZE
+
+        print(
+            f"\nProcessing batch {batch_num}/{total_batches} ({len(batch)} proxies)..."
+        )
+
+        # Create the proxy test for this batch
+        batch_results = create_bulk_proxy_test(batch, test_server_id, TARGET_URL)
+
+        if not batch_results:
+            print(f"Failed to create proxy test for batch {batch_num}")
+            continue
+
+        if batch_results and "data" in batch_results:
+            # Merge results
+            all_results["data"].update(batch_results["data"])
+            print(f"✅ Batch {batch_num} completed successfully")
+        else:
+            print(f"❌ Failed to retrieve results for batch {batch_num}")
+
+    # Step 4: Write all results to CSV
+    if all_results["data"]:
+        print(f"\nWriting all results to CSV...")
+        write_results_to_csv(all_results, OUTPUT_CSV)
+
+        print(f"\n✅ Testing complete! Results saved to: {OUTPUT_CSV}")
+    else:
+        print("No results to write to CSV")
+```
+
+```javascript JavaScript
+const fs = require('fs').promises;
+const { v4: uuidv4 } = require('uuid');
+
+// API credentials
+const API_PUBLIC_KEY = "your_public_key";
+const API_PRIVATE_KEY = "your_private_key";
+const BASE_URL = "https://api.byteful.com/1.0/public/user";
+
+// Headers for authentication
+const headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+};
+
+/**
+ * Read proxy list from a text file
+ * @param {string} filePath - Path to the text file containing proxies
+ * @returns {Promise<string[]>} List of proxy strings or empty array if file reading failed
+ */
+async function readProxiesFromFile(filePath) {
+    try {
+        const fileContent = await fs.readFile(filePath, 'utf8');
+        const proxies = fileContent.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+        
+        console.log(`Successfully loaded ${proxies.length} proxies from ${filePath}`);
+        return proxies;
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.log(`Error: File '${filePath}' not found`);
+        } else {
+            console.log(`Error reading file: ${error.message}`);
+        }
+        return [];
+    }
+}
+
+/**
+ * Get list of active proxy test servers
+ * @returns {Promise<Array|null>} List of available test servers or null if request failed
+ */
+async function getAvailableTestServers() {
+    try {
+        const response = await fetch(
+            `${BASE_URL}/proxy_test_server/search?proxy_test_server_active=true`,
+            { headers }
+        );
+
+        if (response.status !== 200) {
+            console.log(`Error getting test servers: ${response.status}`);
+            const errorText = await response.text();
+            console.log(errorText);
+            return null;
+        }
+
+        const data = await response.json();
+        return data.data;
+    } catch (error) {
+        console.log(`Error getting test servers: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * Create a proxy test for multiple proxies against a target URL
+ * @param {string[]} proxyStrings - List of proxy strings in format "host:port:username:password"
+ * @param {string} testServerId - ID of the proxy test server to use
+ * @param {string} targetUrl - URL to test the proxies against
+ * @returns {Promise<Object|null>} Test run results or null if creation failed
+ */
+async function createBulkProxyTest(proxyStrings, testServerId, targetUrl = "https://byteful.com") {
+    const testRunId = uuidv4();
+
+    // Create proxy list with unique IDs
+    const proxies = proxyStrings.map(proxyString => ({
+        proxy_id: uuidv4(),
+        proxy_string: proxyString
+    }));
+
+    // Create the request payload
+    const payload = {
+        proxies: proxies,
+        proxy_tester_server_id: [testServerId],
+        proxy_test_run_id: testRunId,
+        urls: [targetUrl]
+    };
+
+    try {
+        const response = await fetch(`${BASE_URL}/proxy_test_run/create`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (response.status !== 200) {
+            console.log(`Error: ${response.status}`);
+            const errorText = await response.text();
+            console.log(errorText);
+            return null;
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.log(`Error creating proxy test: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * Write proxy test results to CSV file
+ * @param {Object} results - The test results from the API
+ * @param {string} outputFile - Path to the output CSV file
+ */
+async function writeResultsToCSV(results, outputFile) {
+    if (!results || !results.data) {
+        console.log("No test results to write");
+        return;
+    }
+
+    // Define CSV headers
+    const csvHeaders = [
+        "proxy_ip",
+        "proxy_port", 
+        "is_successful",
+        "error_code",
+        "response_time_ms",
+        "proxy_city",
+        "proxy_country"
+    ];
+
+    try {
+        let csvContent = csvHeaders.join(',') + '\n';
+
+        // Process data rows
+        for (const [testRunId, testData] of Object.entries(results.data)) {
+            if (!testData.results) {
+                continue;
+            }
+
+            for (const result of testData.results) {
+                const row = [
+                    result.proxy_tester_proxy_host || "",
+                    result.proxy_tester_proxy_port || "",
+                    result.proxy_test_result_is_successful || "",
+                    result.proxy_test_result_error_code || "",
+                    result.proxy_test_result_response_time || "",
+                    result.proxy_tester_proxy_city_name || "",
+                    (result.proxy_tester_proxy_country_id || "").toUpperCase()
+                ];
+                
+                // Escape commas and quotes in CSV values
+                const escapedRow = row.map(value => {
+                    const stringValue = String(value);
+                    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                        return `"${stringValue.replace(/"/g, '""')}"`;
+                    }
+                    return stringValue;
+                });
+                
+                csvContent += escapedRow.join(',') + '\n';
+            }
+        }
+
+        await fs.writeFile(outputFile, csvContent, 'utf8');
+        console.log(`Results successfully written to ${outputFile}`);
+
+    } catch (error) {
+        console.log(`Error writing to CSV: ${error.message}`);
+    }
+}
+
+/**
+ * Main function to orchestrate the proxy testing process
+ */
+async function main() {
+    // Configuration
+    const PROXY_FILE = "proxies.txt"; // Text file with one proxy per line in format host:port:username:password
+    const OUTPUT_CSV = `proxy_test_results_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)}.csv`;
+    const TARGET_URL = "https://byteful.com";
+    const BATCH_SIZE = 20;
+
+    // Step 1: Read proxies from file
+    console.log("Reading proxies from file...");
+    const proxyList = await readProxiesFromFile(PROXY_FILE);
+
+    if (proxyList.length === 0) {
+        console.log("No proxies found in file. Please check the file exists and contains valid proxy strings.");
+        process.exit(1);
+    }
+
+    // Step 2: Get available test servers
+    console.log("Getting available test servers...");
+    const servers = await getAvailableTestServers();
+
+    if (!servers || servers.length === 0) {
+        console.log("Failed to get test servers");
+        process.exit(1);
+    }
+
+    // Use a random available server
+    const testServerId = servers[Math.floor(Math.random() * servers.length)].proxy_test_server_id;
+    console.log(`Using test server: ${testServerId}`);
+
+    // Step 3: Process proxies in batches
+    const allResults = { data: {} };
+    
+    for (let i = 0; i < proxyList.length; i += BATCH_SIZE) {
+        const batch = proxyList.slice(i, i + BATCH_SIZE);
+        const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(proxyList.length / BATCH_SIZE);
+
+        console.log(`\nProcessing batch ${batchNum}/${totalBatches} (${batch.length} proxies)...`);
+
+        // Create the proxy test for this batch
+        const batchResults = await createBulkProxyTest(batch, testServerId, TARGET_URL);
+
+        if (!batchResults) {
+            console.log(`Failed to create proxy test for batch ${batchNum}`);
+            continue;
+        }
+
+        if (batchResults && batchResults.data) {
+            // Merge results
+            Object.assign(allResults.data, batchResults.data);
+            console.log(`✅ Batch ${batchNum} completed successfully`);
+        } else {
+            console.log(`❌ Failed to retrieve results for batch ${batchNum}`);
+        }
+    }
+
+    // Step 4: Write all results to CSV
+    if (Object.keys(allResults.data).length > 0) {
+        console.log(`\nWriting all results to CSV...`);
+        await writeResultsToCSV(allResults, OUTPUT_CSV);
+        console.log(`\n✅ Testing complete! Results saved to: ${OUTPUT_CSV}`);
+    } else {
+        console.log("No results to write to CSV");
+    }
+}
+
+// Run the main function
+if (require.main === module) {
+    main().catch(error => {
+        console.error('Unhandled error:', error);
+        process.exit(1);
+    });
+}
+
+module.exports = {
+    readProxiesFromFile,
+    getAvailableTestServers,
+    createBulkProxyTest,
+    writeResultsToCSV
+};
+```
+
+```php PHP
+
+<?php
+/**
+ * Proxy Testing Script - PHP Translation
+ * Tests proxies using PingProxies API and exports results to CSV
+ */
+
+class ProxyTester {
+    private $apiPublicKey;
+    private $apiPrivateKey;
+    private $baseUrl;
+    private $headers;
+
+    public function __construct($publicKey, $privateKey) {
+        $this->apiPublicKey = $publicKey;
+        $this->apiPrivateKey = $privateKey;
+        $this->baseUrl = "https://api.byteful.com/1.0/public/user";
+        $this->headers = [
+            'X-API-Public-Key: ' . $this->apiPublicKey,
+            'X-API-Private-Key: ' . $this->apiPrivateKey,
+            'Content-Type: application/json'
+        ];
+    }
+
+    /**
+     * Read proxy list from a text file
+     *
+     * @param string $filePath Path to the text file containing proxies
+     * @return array List of proxy strings or empty array if file reading failed
+     */
+    public function readProxiesFromFile($filePath) {
+        try {
+            if (!file_exists($filePath)) {
+                echo "Error: File '$filePath' not found\n";
+                return [];
+            }
+
+            $content = file_get_contents($filePath);
+            if ($content === false) {
+                echo "Error: Could not read file '$filePath'\n";
+                return [];
+            }
+
+            $proxies = array_filter(
+                array_map('trim', explode("\n", $content)),
+                function($line) { return !empty($line); }
+            );
+
+            echo "Successfully loaded " . count($proxies) . " proxies from $filePath\n";
+            return $proxies;
+
+        } catch (Exception $e) {
+            echo "Error reading file: " . $e->getMessage() . "\n";
+            return [];
+        }
+    }
+
+    /**
+     * Get list of active proxy test servers
+     *
+     * @return array|null List of available test servers or null if request failed
+     */
+    public function getAvailableTestServers() {
+        $url = $this->baseUrl . "/proxy_test_server/search?proxy_test_server_active=true";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            echo "Error getting test servers: $httpCode\n";
+            echo "$response\n";
+            return null;
+        }
+
+        $data = json_decode($response, true);
+        return $data['data'] ?? null;
+    }
+
+    /**
+     * Create a proxy test for multiple proxies against a target URL
+     *
+     * @param array $proxyStrings List of proxy strings in format "host:port:username:password"
+     * @param string $testServerId ID of the proxy test server to use
+     * @param string $targetUrl URL to test the proxies against
+     * @return array|null Test results or null if creation failed
+     */
+    public function createBulkProxyTest($proxyStrings, $testServerId, $targetUrl = "https://byteful.com") {
+        $testRunId = $this->generateUuid();
+
+        // Create proxy list with unique IDs
+        $proxies = [];
+        foreach ($proxyStrings as $proxyString) {
+            $proxyId = $this->generateUuid();
+            $proxies[] = [
+                'proxy_id' => $proxyId,
+                'proxy_string' => $proxyString
+            ];
+        }
+
+        // Create the request payload
+        $payload = [
+            'proxies' => $proxies,
+            'proxy_tester_server_id' => [$testServerId],
+            'proxy_test_run_id' => $testRunId,
+            'urls' => [$targetUrl]
+        ];
+
+        $url = $this->baseUrl . "/proxy_test_run/create";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            echo "Error: $httpCode\n";
+            echo "$response\n";
+            return null;
+        }
+
+        return json_decode($response, true);
+    }
+
+    /**
+     * Write proxy test results to CSV file
+     *
+     * @param array $results The test results from the API
+     * @param string $outputFile Path to the output CSV file
+     */
+    public function writeResultsToCsv($results, $outputFile) {
+        if (empty($results) || !isset($results['data'])) {
+            echo "No test results to write\n";
+            return;
+        }
+
+        // Define CSV headers
+        $csvHeaders = [
+            'proxy_ip',
+            'proxy_port',
+            'is_successful',
+            'error_code',
+            'response_time_ms',
+            'proxy_city',
+            'proxy_country'
+        ];
+
+        try {
+            $file = fopen($outputFile, 'w');
+            if (!$file) {
+                throw new Exception("Could not open file for writing");
+            }
+
+            // Write headers
+            fputcsv($file, $csvHeaders);
+
+            // Write data rows
+            foreach ($results['data'] as $testRunId => $testData) {
+                if (!isset($testData['results'])) {
+                    continue;
+                }
+
+                foreach ($testData['results'] as $result) {
+                    $row = [
+                        $result['proxy_tester_proxy_host'] ?? '',
+                        $result['proxy_tester_proxy_port'] ?? '',
+                        $result['proxy_test_result_is_successful'] ?? '',
+                        $result['proxy_test_result_error_code'] ?? '',
+                        $result['proxy_test_result_response_time'] ?? '',
+                        $result['proxy_tester_proxy_city_name'] ?? '',
+                        strtoupper($result['proxy_tester_proxy_country_id'] ?? '')
+                    ];
+                    fputcsv($file, $row);
+                }
+            }
+
+            fclose($file);
+            echo "Results successfully written to $outputFile\n";
+
+        } catch (Exception $e) {
+            echo "Error writing to CSV: " . $e->getMessage() . "\n";
+        }
+    }
+
+    /**
+     * Generate a UUID v4
+     *
+     * @return string UUID string
+     */
+    private function generateUuid() {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+}
+
+// Main execution
+function main() {
+    // Configuration
+    $API_PUBLIC_KEY = "your_public_key";
+    $API_PRIVATE_KEY = "your_private_key";
+    $PROXY_FILE = "proxies.txt"; // Text file with one proxy per line in format host:port:username:password
+    $OUTPUT_CSV = "proxy_test_results_" . date('Ymd_His') . ".csv";
+    $TARGET_URL = "https://byteful.com";
+    $BATCH_SIZE = 20;
+
+    // Initialize the proxy tester
+    $proxyTester = new ProxyTester($API_PUBLIC_KEY, $API_PRIVATE_KEY);
+
+    // Step 1: Read proxies from file
+    echo "Reading proxies from file...\n";
+    $proxyList = $proxyTester->readProxiesFromFile($PROXY_FILE);
+
+    if (empty($proxyList)) {
+        echo "No proxies found in file. Please check the file exists and contains valid proxy strings.\n";
+        exit(1);
+    }
+
+    // Step 2: Get available test servers
+    echo "Getting available test servers...\n";
+    $servers = $proxyTester->getAvailableTestServers();
+
+    if (empty($servers)) {
+        echo "Failed to get test servers\n";
+        exit(1);
+    }
+
+    // Use a random server from available servers
+    $testServerId = $servers[array_rand($servers)]['proxy_test_server_id'];
+    echo "Using test server: $testServerId\n";
+
+    // Step 3: Process proxies in batches
+    $allResults = ['data' => []];
+    $totalBatches = ceil(count($proxyList) / $BATCH_SIZE);
+
+    for ($i = 0; $i < count($proxyList); $i += $BATCH_SIZE) {
+        $batch = array_slice($proxyList, $i, $BATCH_SIZE);
+        $batchNum = intval($i / $BATCH_SIZE) + 1;
+
+        echo "\nProcessing batch $batchNum/$totalBatches (" . count($batch) . " proxies)...\n";
+
+        // Create the proxy test for this batch
+        $batchResults = $proxyTester->createBulkProxyTest($batch, $testServerId, $TARGET_URL);
+
+        if (!$batchResults) {
+            echo "❌ Failed to create proxy test for batch $batchNum\n";
+            continue;
+        }
+
+        if ($batchResults && isset($batchResults['data'])) {
+            // Merge results
+            $allResults['data'] = array_merge($allResults['data'], $batchResults['data']);
+            echo "✅ Batch $batchNum completed successfully\n";
+        } else {
+            echo "❌ Failed to retrieve results for batch $batchNum\n";
+        }
+    }
+
+    // Step 4: Write all results to CSV
+    if (!empty($allResults['data'])) {
+        echo "\nWriting all results to CSV...\n";
+        $proxyTester->writeResultsToCsv($allResults, $OUTPUT_CSV);
+        echo "\n✅ Testing complete! Results saved to: $OUTPUT_CSV\n";
+    } else {
+        echo "No results to write to CSV\n";
+    }
+}
+
+// Run the script
+main();
+?>
+```
+
+``` go Go
+
+package main
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"math/rand"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+const (
+	BaseURL = "https://api.byteful.com/1.0/public/user"
+)
+
+// ProxyTester handles proxy testing operations
+type ProxyTester struct {
+	APIPublicKey  string
+	APIPrivateKey string
+	HTTPClient    *http.Client
+}
+
+// ProxyTestServer represents a test server from the API
+type ProxyTestServer struct {
+	ProxyTestServerID string `json:"proxy_test_server_id"`
+}
+
+// ServersResponse represents the response from the servers endpoint
+type ServersResponse struct {
+	Data []ProxyTestServer `json:"data"`
+}
+
+// ProxyRequest represents a proxy in the test request
+type ProxyRequest struct {
+	ProxyID     string `json:"proxy_id"`
+	ProxyString string `json:"proxy_string"`
+}
+
+// TestRequest represents the bulk test request payload
+type TestRequest struct {
+	Proxies             []ProxyRequest `json:"proxies"`
+	ProxyTesterServerID []string       `json:"proxy_tester_server_id"`
+	ProxyTestRunID      string         `json:"proxy_test_run_id"`
+	URLs                []string       `json:"urls"`
+}
+
+// TestResult represents individual proxy test result
+type TestResult struct {
+	ProxyTesterProxyHost        string `json:"proxy_tester_proxy_host"`
+	ProxyTesterProxyPort        int `json:"proxy_tester_proxy_port"`
+	ProxyTestResultIsSuccessful bool `json:"proxy_test_result_is_successful"`
+	ProxyTestResultErrorCode    string `json:"proxy_test_result_error_code"`
+	ProxyTestResultResponseTime int `json:"proxy_test_result_response_time"`
+	ProxyTesterProxyCityName    string `json:"proxy_tester_proxy_city_name"`
+	ProxyTesterProxyCountryID   string `json:"proxy_tester_proxy_country_id"`
+}
+
+// TestRunData represents test run results
+type TestRunData struct {
+	Results []TestResult `json:"results"`
+}
+
+// TestResponse represents the response from bulk test creation
+type TestResponse struct {
+	Data map[string]TestRunData `json:"data"`
+}
+
+// NewProxyTester creates a new ProxyTester instance
+func NewProxyTester(publicKey, privateKey string) *ProxyTester {
+	return &ProxyTester{
+		APIPublicKey:  publicKey,
+		APIPrivateKey: privateKey,
+		HTTPClient: &http.Client{
+			Timeout: 60 * time.Second,
+		},
+	}
+}
+
+// ReadProxiesFromFile reads proxy list from a text file
+func (pt *ProxyTester) ReadProxiesFromFile(filePath string) ([]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %w", err)
+	}
+	defer file.Close()
+
+	var proxies []string
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			proxies = append(proxies, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %w", err)
+	}
+
+	fmt.Printf("Successfully loaded %d proxies from %s\n", len(proxies), filePath)
+	return proxies, nil
+}
+
+// GetAvailableTestServers gets list of active proxy test servers
+func (pt *ProxyTester) GetAvailableTestServers() ([]ProxyTestServer, error) {
+	url := BaseURL + "/proxy_test_server/search?proxy_test_server_active=true"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("X-API-Public-Key", pt.APIPublicKey)
+	req.Header.Set("X-API-Private-Key", pt.APIPrivateKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := pt.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error making request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("error getting test servers: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var serversResp ServersResponse
+	if err := json.NewDecoder(resp.Body).Decode(&serversResp); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	return serversResp.Data, nil
+}
+
+// CreateBulkProxyTest creates a proxy test for multiple proxies against a target URL
+func (pt *ProxyTester) CreateBulkProxyTest(proxyStrings []string, testServerID, targetURL string) (*TestResponse, error) {
+	testRunID := uuid.New().String()
+
+	// Create proxy list with unique IDs
+	var proxies []ProxyRequest
+	for _, proxyString := range proxyStrings {
+		proxies = append(proxies, ProxyRequest{
+			ProxyID:     uuid.New().String(),
+			ProxyString: proxyString,
+		})
+	}
+
+	// Create the request payload
+	testReq := TestRequest{
+		Proxies:             proxies,
+		ProxyTesterServerID: []string{testServerID},
+		ProxyTestRunID:      testRunID,
+		URLs:                []string{targetURL},
+	}
+
+	payload, err := json.Marshal(testReq)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling request: %w", err)
+	}
+
+	url := BaseURL + "/proxy_test_run/create"
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("X-API-Public-Key", pt.APIPublicKey)
+	req.Header.Set("X-API-Private-Key", pt.APIPrivateKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := pt.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error making request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("error: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var testResp TestResponse
+	if err := json.NewDecoder(resp.Body).Decode(&testResp); err != nil {
+		return nil, fmt.Errorf("error decoding response: %w", err)
+	}
+
+	return &testResp, nil
+}
+
+// WriteResultsToCSV writes proxy test results to CSV file
+func (pt *ProxyTester) WriteResultsToCSV(allResults []TestResult, outputFile string) error {
+	if len(allResults) == 0 {
+		fmt.Println("No test results to write")
+		return nil
+	}
+
+	file, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("error creating CSV file: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write headers
+	headers := []string{
+		"proxy_ip",
+		"proxy_port",
+		"is_successful",
+		"error_code",
+		"response_time_ms",
+		"proxy_city",
+		"proxy_country",
+	}
+
+	if err := writer.Write(headers); err != nil {
+		return fmt.Errorf("error writing headers: %w", err)
+	}
+
+	// Write data rows
+	for _, result := range allResults {
+		row := []string{
+			result.ProxyTesterProxyHost,
+			fmt.Sprintf("%d", result.ProxyTesterProxyPort),
+			fmt.Sprintf("%t", result.ProxyTestResultIsSuccessful),
+			result.ProxyTestResultErrorCode,
+			fmt.Sprintf("%d", result.ProxyTestResultResponseTime),
+			result.ProxyTesterProxyCityName,
+			strings.ToUpper(result.ProxyTesterProxyCountryID),
+		}
+
+		if err := writer.Write(row); err != nil {
+			return fmt.Errorf("error writing row: %w", err)
+		}
+	}
+
+	fmt.Printf("Results successfully written to %s\n", outputFile)
+	return nil
+}
+
+func main() {
+	// Configuration
+	const (
+		APIPublicKey  = "your_public_key"
+		APIPrivateKey = "your_private_key"
+		ProxyFile     = "proxies.txt" // Text file with one proxy per line
+		TargetURL     = "https://byteful.com"
+		BatchSize     = 20
+	)
+
+	// Generate timestamped output filename
+	outputCSV := fmt.Sprintf("proxy_test_results_%s.csv",
+		time.Now().Format("20060102_120405"))
+
+	// Initialize the proxy tester
+	proxyTester := NewProxyTester(APIPublicKey, APIPrivateKey)
+
+	// Step 1: Read proxies from file
+	fmt.Println("Reading proxies from file...")
+	proxyList, err := proxyTester.ReadProxiesFromFile(ProxyFile)
+	if err != nil {
+		log.Fatalf("Failed to read proxies: %v", err)
+	}
+
+	if len(proxyList) == 0 {
+		log.Fatal("No proxies found in file. Please check the file exists and contains valid proxy strings.")
+	}
+
+	// Step 2: Get available test servers
+	fmt.Println("Getting available test servers...")
+	servers, err := proxyTester.GetAvailableTestServers()
+	if err != nil {
+		log.Fatalf("Failed to get test servers: %v", err)
+	}
+
+	if len(servers) == 0 {
+		log.Fatal("No test servers available")
+	}
+
+	// Use a random server from available servers
+	rand.Seed(time.Now().UnixNano())
+	testServerID := servers[rand.Intn(len(servers))].ProxyTestServerID
+	fmt.Printf("Using test server: %s\n", testServerID)
+
+	// Step 3: Process proxies in batches
+	var allResults []TestResult
+	totalBatches := (len(proxyList) + BatchSize - 1) / BatchSize
+
+	for i := 0; i < len(proxyList); i += BatchSize {
+		end := i + BatchSize
+		if end > len(proxyList) {
+			end = len(proxyList)
+		}
+
+		batch := proxyList[i:end]
+		batchNum := (i / BatchSize) + 1
+
+		fmt.Printf("\nProcessing batch %d/%d (%d proxies)...\n",
+			batchNum, totalBatches, len(batch))
+
+		// Create the proxy test for this batch
+		batchResults, err := proxyTester.CreateBulkProxyTest(batch, testServerID, TargetURL)
+		if err != nil {
+			fmt.Printf("❌ Failed to create proxy test for batch %d: %v\n", batchNum, err)
+			continue
+		}
+
+		// Collect results from this batch
+		batchResultCount := 0
+		for _, testData := range batchResults.Data {
+			allResults = append(allResults, testData.Results...)
+			batchResultCount += len(testData.Results)
+		}
+
+		if batchResultCount > 0 {
+			fmt.Printf("✅ Batch %d completed successfully\n", batchNum)
+		} else {
+			fmt.Printf("❌ Failed to retrieve results for batch %d\n", batchNum)
+		}
+	}
+
+	// Step 4: Write all results to CSV
+	if len(allResults) > 0 {
+		fmt.Println("\nWriting all results to CSV...")
+		if err := proxyTester.WriteResultsToCSV(allResults, outputCSV); err != nil {
+			log.Fatalf("Failed to write CSV: %v", err)
+		}
+		fmt.Printf("\n✅ Testing complete! Results saved to: %s\n", outputCSV)
+	} else {
+		fmt.Println("No results to write to CSV")
+	}
+}
+```
+
+```java Java
+
+import java.io.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+/**
+ * Proxy Testing Application - Java Translation
+ * Tests proxies using PingProxies API and exports results to CSV
+ */
+public class ProxyTester {
+    private final String apiPublicKey;
+    private final String apiPrivateKey;
+    private final String baseUrl;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
+
+    public ProxyTester(String publicKey, String privateKey) {
+        this.apiPublicKey = publicKey;
+        this.apiPrivateKey = privateKey;
+        this.baseUrl = "https://api.byteful.com/1.0/public/user";
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .build();
+        this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * Read proxy list from a text file
+     *
+     * @param filePath Path to the text file containing proxies
+     * @return List of proxy strings or empty list if file reading failed
+     */
+    public List<String> readProxiesFromFile(String filePath) {
+        try {
+            List<String> proxies = Files.readAllLines(Paths.get(filePath))
+                    .stream()
+                    .map(String::trim)
+                    .filter(line -> !line.isEmpty())
+                    .collect(Collectors.toList());
+
+            System.out.println("Successfully loaded " + proxies.size() + " proxies from " + filePath);
+            return proxies;
+
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get list of active proxy test servers
+     *
+     * @return List of available test servers or null if request failed
+     */
+    public JsonNode getAvailableTestServers() {
+        try {
+            String url = baseUrl + "/proxy_test_server/search?proxy_test_server_active=true";
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("X-API-Public-Key", apiPublicKey)
+                    .header("X-API-Private-Key", apiPrivateKey)
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                System.err.println("Error getting test servers: " + response.statusCode());
+                System.err.println(response.body());
+                return null;
+            }
+
+            JsonNode data = objectMapper.readTree(response.body());
+            return data.get("data");
+
+        } catch (Exception e) {
+            System.err.println("Error getting test servers: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Create a proxy test for multiple proxies against a target URL
+     *
+     * @param proxyStrings List of proxy strings in format "host:port:username:password"
+     * @param testServerId ID of the proxy test server to use
+     * @param targetUrl URL to test the proxies against
+     * @return Test results or null if creation failed
+     */
+    public JsonNode createBulkProxyTest(List<String> proxyStrings, String testServerId, String targetUrl) {
+        try {
+            String testRunId = UUID.randomUUID().toString();
+
+            // Create proxy list with unique IDs
+            ArrayNode proxies = objectMapper.createArrayNode();
+            for (String proxyString : proxyStrings) {
+                String proxyId = UUID.randomUUID().toString();
+                ObjectNode proxy = objectMapper.createObjectNode();
+                proxy.put("proxy_id", proxyId);
+                proxy.put("proxy_string", proxyString);
+                proxies.add(proxy);
+            }
+
+            // Create the request payload
+            ObjectNode payload = objectMapper.createObjectNode();
+            payload.set("proxies", proxies);
+            
+            ArrayNode serverIds = objectMapper.createArrayNode();
+            serverIds.add(testServerId);
+            payload.set("proxy_tester_server_id", serverIds);
+            
+            payload.put("proxy_test_run_id", testRunId);
+            
+            ArrayNode urls = objectMapper.createArrayNode();
+            urls.add(targetUrl);
+            payload.set("urls", urls);
+
+            String url = baseUrl + "/proxy_test_run/create";
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("X-API-Public-Key", apiPublicKey)
+                    .header("X-API-Private-Key", apiPrivateKey)
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(60))
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                System.err.println("Error: " + response.statusCode());
+                System.err.println(response.body());
+                return null;
+            }
+
+            return objectMapper.readTree(response.body());
+
+        } catch (Exception e) {
+            System.err.println("Error creating bulk proxy test: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Write proxy test results to CSV file
+     *
+     * @param results The test results from the API
+     * @param outputFile Path to the output CSV file
+     */
+    public void writeResultsToCsv(JsonNode results, String outputFile) {
+        if (results == null || !results.has("data")) {
+            System.out.println("No test results to write");
+            return;
+        }
+
+        // Define CSV headers
+        String[] csvHeaders = {
+            "proxy_ip",
+            "proxy_port", 
+            "is_successful",
+            "error_code",
+            "response_time_ms",
+            "proxy_city",
+            "proxy_country"
+        };
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(outputFile))) {
+            // Write headers
+            writer.println(String.join(",", csvHeaders));
+
+            // Write data rows
+            JsonNode data = results.get("data");
+            Iterator<Map.Entry<String, JsonNode>> fields = data.fields();
+            
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                JsonNode testData = entry.getValue();
+                
+                if (!testData.has("results")) {
+                    continue;
+                }
+
+                JsonNode resultsArray = testData.get("results");
+                for (JsonNode result : resultsArray) {
+                    String[] row = {
+                        getJsonValue(result, "proxy_tester_proxy_host"),
+                        getJsonValue(result, "proxy_tester_proxy_port"),
+                        getJsonValue(result, "proxy_test_result_is_successful"),
+                        getJsonValue(result, "proxy_test_result_error_code"),
+                        getJsonValue(result, "proxy_test_result_response_time"),
+                        getJsonValue(result, "proxy_tester_proxy_city_name"),
+                        getJsonValue(result, "proxy_tester_proxy_country_id").toUpperCase()
+                    };
+                    
+                    // Escape CSV values that contain commas or quotes
+                    String csvRow = Arrays.stream(row)
+                            .map(this::escapeCsvValue)
+                            .collect(Collectors.joining(","));
+                    
+                    writer.println(csvRow);
+                }
+            }
+
+            System.out.println("Results successfully written to " + outputFile);
+
+        } catch (IOException e) {
+            System.err.println("Error writing to CSV: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Helper method to safely get JSON values
+     */
+    private String getJsonValue(JsonNode node, String fieldName) {
+        JsonNode field = node.get(fieldName);
+        return field != null ? field.asText() : "";
+    }
+
+    /**
+     * Escape CSV values that contain special characters
+     */
+    private String escapeCsvValue(String value) {
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+
+    /**
+     * Main method - entry point of the application
+     */
+    public static void main(String[] args) {
+        // Configuration
+        String API_PUBLIC_KEY = "your_public_key";
+        String API_PRIVATE_KEY = "your_private_key";
+        String PROXY_FILE = "proxies.txt"; // Text file with one proxy per line
+        String OUTPUT_CSV = "proxy_test_results_" + 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
+        String TARGET_URL = "https://byteful.com";
+        int BATCH_SIZE = 20;
+
+        // Initialize the proxy tester
+        ProxyTester proxyTester = new ProxyTester(API_PUBLIC_KEY, API_PRIVATE_KEY);
+
+        // Step 1: Read proxies from file
+        System.out.println("Reading proxies from file...");
+        List<String> proxyList = proxyTester.readProxiesFromFile(PROXY_FILE);
+
+        if (proxyList.isEmpty()) {
+            System.err.println("No proxies found in file. Please check the file exists and contains valid proxy strings.");
+            System.exit(1);
+        }
+
+        // Step 2: Get available test servers
+        System.out.println("Getting available test servers...");
+        JsonNode servers = proxyTester.getAvailableTestServers();
+
+        if (servers == null || servers.size() == 0) {
+            System.err.println("Failed to get test servers");
+            System.exit(1);
+        }
+
+        // Use a random server from available servers
+        Random random = new Random();
+        JsonNode selectedServer = servers.get(random.nextInt(servers.size()));
+        String testServerId = selectedServer.get("proxy_test_server_id").asText();
+        System.out.println("Using test server: " + testServerId);
+
+        // Step 3: Process proxies in batches
+        ObjectNode allResults = proxyTester.objectMapper.createObjectNode();
+        ObjectNode dataNode = proxyTester.objectMapper.createObjectNode();
+        allResults.set("data", dataNode);
+        
+        int totalBatches = (int) Math.ceil((double) proxyList.size() / BATCH_SIZE);
+
+        for (int i = 0; i < proxyList.size(); i += BATCH_SIZE) {
+            List<String> batch = proxyList.subList(i, Math.min(i + BATCH_SIZE, proxyList.size()));
+            int batchNum = (i / BATCH_SIZE) + 1;
+
+            System.out.println("\nProcessing batch " + batchNum + "/" + totalBatches + 
+                             " (" + batch.size() + " proxies)...");
+
+            // Create the proxy test for this batch
+            JsonNode batchResults = proxyTester.createBulkProxyTest(batch, testServerId, TARGET_URL);
+
+            if (batchResults == null) {
+                System.out.println("❌ Failed to create proxy test for batch " + batchNum);
+                continue;
+            }
+
+            if (batchResults.has("data")) {
+                // Merge results
+                JsonNode batchData = batchResults.get("data");
+                Iterator<Map.Entry<String, JsonNode>> fields = batchData.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> entry = fields.next();
+                    dataNode.set(entry.getKey(), entry.getValue());
+                }
+                System.out.println("✅ Batch " + batchNum + " completed successfully");
+            } else {
+                System.out.println("❌ Failed to retrieve results for batch " + batchNum);
+            }
+        }
+
+        // Step 4: Write all results to CSV
+        if (dataNode.size() > 0) {
+            System.out.println("\nWriting all results to CSV...");
+            proxyTester.writeResultsToCsv(allResults, OUTPUT_CSV);
+            System.out.println("\n✅ Testing complete! Results saved to: " + OUTPUT_CSV);
+        } else {
+            System.out.println("No results to write to CSV");
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Key Features Explained
+
+### 1. Bulk Proxy File Processing
+The example reads proxies from a text file (proxies.txt) where each line contains a proxy in the format `host:port:username:password`:
+```
+209.99.134.6:5702:ftrdddga:518src41byms
+185.199.229.156:7492:username:password
+45.95.96.132:8691:user:pass
+```
+
+### 2. Batch Processing
+To handle large proxy lists efficiently, the script processes proxies in configurable batches (default: 20 proxies per batch):
+```python
+BATCH_SIZE = 20  # Adjust based on your needs. Limit is currently 20.
+```
+
+### 3. CSV Output with Required Fields
+The script writes comprehensive results to a timestamped CSV file with the following columns:
+- **proxy_ip**: The IP address of the proxy
+- **proxy_port**: The port number of the proxy
+- **is_successful**: Whether the proxy test completed successfully
+- **error_code**: The error code that was returned in the event of a failure
+- **response_time_ms**: Response time in milliseconds
+- **proxy_city** & **proxy_country**: Geographic location of the proxy
+
+### 4. Progress Tracking and Summary
+The script provides:
+- Real-time progress updates for each batch
+- Final summary with pass/fail statistics and average response times
+- Error handling for file operations and API calls
+
+### 5. File Setup Instructions
+1. Create a `proxies.txt` file in the same directory with your proxy list.
+
+2. Run the script.
+
+3. The script will automatically generate a timestamped CSV file like `proxy_test_results_20220813_143022.csv` with
+all of your test results.

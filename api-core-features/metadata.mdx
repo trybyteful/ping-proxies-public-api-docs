@@ -1,0 +1,795 @@
+---
+title: 'Metadata'
+description: 'Using and working with metadata in the Byteful API'
+---
+
+Metadata provides a flexible way to store additional information with your resources. The Byteful API supports metadata on several resources, allowing you to add custom attributes without changing the core API structure.
+
+Metadata is particularly useful for resellers who want to store information about their customers on our systems, or users who want to label or add information to specific proxy users or services.
+
+## Supported Resources with Metadata
+
+The following resources support metadata fields:
+
+- **Proxy Users** (`proxy_user_metadata`)
+- **Services** (`service_metadata`) 
+
+## Metadata Structure
+
+Metadata is stored as a JSON object with key-value pairs. For example:
+
+```json
+{
+  "customer_reference_id": "CR-12345",
+  "department": "Marketing",
+  "project": "Q2 Campaign",
+  "is_priority": true,
+  "employee_id": 1500
+}
+```
+
+## Supported Value Types
+
+Metadata supports the following value types:
+
+- **String**: Text values (e.g., `"department": "Marketing"`)
+- **Integer**: Whole numbers (e.g., `"employee_id": 1500`)
+- **Float**: Decimal numbers (e.g., `"success_rate": 98.6`)
+- **Boolean**: True/false values (e.g., `"is_priority": true`)
+
+<Tip>
+  To store datetime objects, we recommend using timestamps as integers since they're more efficiently stored and queried. They can also be compared using the min_ and max_ operators.
+</Tip>
+
+## Constraints
+
+When working with metadata in the Byteful API, keep these constraints in mind:
+
+- **Non-nested structure**: Metadata must be a flat JSON object (no nested objects)
+- **Limited keys**: Maximum of 30 keys per metadata object
+- **Value length**: Each value's string representation must be ≤ 300 characters
+- **Size limit**: Total metadata size must be ≤ 32KB
+- **Supported value types**: String, boolean, float, and integer values
+
+## Adding Metadata
+
+You can add metadata when creating or updating resources. For example, when creating a proxy user:
+
+```json
+{
+  "proxy_user_id": "stevejobs",
+  "proxy_user_metadata": {
+    "department": "Marketing",
+    "cost_center": "CC-45678",
+    "manager": "Jane Smith"
+  }
+}
+```
+
+## Updating Metadata
+
+When updating metadata, you must provide the complete metadata object. The API will replace the existing metadata with your new object, not merge them.
+
+For example, to update a service's metadata:
+
+```json
+{
+  "service_metadata": {
+    "project": "Updated Project Name",
+    "department": "Sales",
+    "priority": "high"
+  }
+}
+```
+
+## Searching by Metadata
+
+The API allows filtering resources based on their metadata values. This is particularly powerful for organizing and retrieving resources based on your custom attributes.
+
+### Metadata Search Operators
+
+When searching, you can use the following formats:
+
+- **Exact match**: `proxy_user_metadata.department=Marketing`
+- **Minimum value**: `proxy_user_metadata.min_employee_id=1000`
+- **Maximum value**: `proxy_user_metadata.max_employee_id=2000`
+- **Contains substring**: `proxy_user_metadata.like_project=%Campaign%`
+- **Not equal**: `proxy_user_metadata.not_department=IT`
+- **Existence check**:
+  - `proxy_user_metadata.exists_project=true` (key must exist)
+  - `proxy_user_metadata.exists_project=false` (key must not exist)
+
+## Code Examples
+
+<CodeGroup>
+```bash cURL
+# Creating a proxy user with metadata
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_id": "john_marketing",
+    "proxy_user_metadata": {
+      "department": "Marketing",
+      "cost_center": "CC-45678",
+      "project": "Summer Campaign",
+      "is_priority": true,
+      "employee_id": 1500
+    }
+  }'
+
+# Updating a service's metadata
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/service/update' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "service_id": "srv-12345",
+    "service_metadata": {
+      "project": "Fall Campaign",
+      "department": "Sales",
+      "priority": "high"
+    }
+  }'
+
+# Searching for proxy users in the Marketing department
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/search?proxy_user_metadata.department=Marketing' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Searching for high-priority services
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/service/search?proxy_user_metadata.priority=high' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+```python Python
+import requests
+import json
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+# Create a proxy user with metadata
+def create_proxy_user_with_metadata(proxy_user_id, metadata):
+    url = f"{BASE_URL}/proxy_user/create"
+    payload = {
+        "proxy_user_id": proxy_user_id,
+        "proxy_user_metadata": metadata
+    }
+    
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    return response.json()
+
+# Update a service's metadata
+def update_service_metadata(service_id, metadata):
+    url = f"{BASE_URL}/service/update"
+    payload = {
+        "service_id": service_id,
+        "service_metadata": metadata
+    }
+    
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    return response.json()
+
+# Search for proxy users by metadata
+def search_proxy_users_by_metadata(metadata_key, metadata_value):
+    url = f"{BASE_URL}/proxy_user/search"
+    params = {
+        f"proxy_user_metadata.{metadata_key}": metadata_value
+    }
+    
+    response = requests.get(url, headers=headers, params=params)
+    return response.json()
+
+# Example usage
+if __name__ == "__main__":
+    # Create a proxy user with metadata
+    user_metadata = {
+        "department": "Marketing",
+        "cost_center": "CC-45678",
+        "project": "Summer Campaign",
+        "is_priority": True,
+        "employee_id": 1500
+    }
+    
+    create_result = create_proxy_user_with_metadata("john_marketing", user_metadata)
+    print(f"Created proxy user: {create_result}")
+    
+    # Update a service's metadata
+    service_metadata = {
+        "project": "Fall Campaign",
+        "department": "Sales",
+        "priority": "high"
+    }
+    
+    update_result = update_service_metadata("srv-12345", service_metadata)
+    print(f"Updated service metadata: {update_result}")
+    
+    # Search for proxy users in the Marketing department
+    search_result = search_proxy_users_by_metadata("department", "Marketing")
+    print(f"Found {search_result['total_count']} proxy users in Marketing")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public/user';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY,
+  'Content-Type': 'application/json'
+};
+
+// Create a proxy user with metadata
+async function createProxyUserWithMetadata(proxyUserId, metadata) {
+  const url = `${BASE_URL}/proxy_user/create`;
+  const payload = {
+    proxy_user_id: proxyUserId,
+    proxy_user_metadata: metadata
+  };
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+  
+  return await response.json();
+}
+
+// Update a service's metadata
+async function updateServiceMetadata(serviceId, metadata) {
+  const url = `${BASE_URL}/service/update`;
+  const payload = {
+    service_id: serviceId,
+    service_metadata: metadata
+  };
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+  
+  return await response.json();
+}
+
+// Search for proxy users by metadata
+async function searchProxyUsersByMetadata(metadataKey, metadataValue) {
+  const url = new URL(`${BASE_URL}/proxy_user/search`);
+  url.searchParams.append(`proxy_user_metadata.${metadataKey}`, metadataValue);
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Example usage
+async function main() {
+  try {
+    // Create a proxy user with metadata
+    const userMetadata = {
+      department: 'Marketing',
+      cost_center: 'CC-45678',
+      project: 'Summer Campaign',
+      is_priority: true,
+      employee_id: 1500
+    };
+    
+    const createResult = await createProxyUserWithMetadata('john_marketing', userMetadata);
+    console.log(`Created proxy user: ${JSON.stringify(createResult)}`);
+    
+    // Update a service's metadata
+    const serviceMetadata = {
+      project: 'Fall Campaign',
+      department: 'Sales',
+      priority: 'high'
+    };
+    
+    const updateResult = await updateServiceMetadata('srv-12345', serviceMetadata);
+    console.log(`Updated service metadata: ${JSON.stringify(updateResult)}`);
+    
+    // Search for proxy users in the Marketing department
+    const searchResult = await searchProxyUsersByMetadata('department', 'Marketing');
+    console.log(`Found ${searchResult.total_count} proxy users in Marketing`);
+  } catch (error) {
+    console.error('Error working with metadata:', error);
+  }
+}
+
+main();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public/user';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey,
+    'Content-Type: application/json'
+];
+
+// Create a proxy user with metadata
+function createProxyUserWithMetadata($baseUrl, $headers, $proxyUserId, $metadata) {
+    $url = $baseUrl . '/proxy_user/create';
+    $payload = json_encode([
+        'proxy_user_id' => $proxyUserId,
+        'proxy_user_metadata' => $metadata
+    ]);
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return json_decode($response, true);
+}
+
+// Update a service's metadata
+function updateServiceMetadata($baseUrl, $headers, $serviceId, $metadata) {
+    $url = $baseUrl . '/service/update';
+    $payload = json_encode([
+        'service_id' => $serviceId,
+        'service_metadata' => $metadata
+    ]);
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return json_decode($response, true);
+}
+
+// Search for proxy users by metadata
+function searchProxyUsersByMetadata($baseUrl, $headers, $metadataKey, $metadataValue) {
+    $url = $baseUrl . '/proxy_user/search?proxy_user_metadata.' . $metadataKey . '=' . urlencode($metadataValue);
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return json_decode($response, true);
+}
+
+// Example usage
+try {
+    // Create a proxy user with metadata
+    $userMetadata = [
+        'department' => 'Marketing',
+        'cost_center' => 'CC-45678',
+        'project' => 'Summer Campaign',
+        'is_priority' => true,
+        'employee_id' => 1500
+    ];
+    
+    $createResult = createProxyUserWithMetadata($baseUrl, $headers, 'john_marketing', $userMetadata);
+    echo "Created proxy user: " . json_encode($createResult) . "\n";
+    
+    // Update a service's metadata
+    $serviceMetadata = [
+        'project' => 'Fall Campaign',
+        'department' => 'Sales',
+        'priority' => 'high'
+    ];
+    
+    $updateResult = updateServiceMetadata($baseUrl, $headers, 'srv-12345', $serviceMetadata);
+    echo "Updated service metadata: " . json_encode($updateResult) . "\n";
+    
+    // Search for proxy users in the Marketing department
+    $searchResult = searchProxyUsersByMetadata($baseUrl, $headers, 'department', 'Marketing');
+    echo "Found " . $searchResult['total_count'] . " proxy users in Marketing\n";
+} catch (Exception $e) {
+    echo "Error working with metadata: " . $e->getMessage() . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public/user"
+)
+
+// Response structure for API
+type ApiResponse struct {
+	Message string          `json:"message"`
+	Data    json.RawMessage `json:"data"`
+}
+
+// SearchResponse structure for search endpoints
+type SearchResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+// CreateProxyUserWithMetadata creates a proxy user with metadata
+func CreateProxyUserWithMetadata(proxyUserId string, metadata map[string]interface{}) (*ApiResponse, error) {
+	url := baseURL + "/proxy_user/create"
+	
+	// Create the payload
+	payload := map[string]interface{}{
+		"proxy_user_id":        proxyUserId,
+		"proxy_user_metadata":  metadata,
+	}
+	
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Create the request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add headers
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var response ApiResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &response, nil
+}
+
+// UpdateServiceMetadata updates a service's metadata
+func UpdateServiceMetadata(serviceId string, metadata map[string]interface{}) (*ApiResponse, error) {
+	url := baseURL + "/service/update"
+	
+	// Create the payload
+	payload := map[string]interface{}{
+		"service_id":        serviceId,
+		"service_metadata":  metadata,
+	}
+	
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Create the request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add headers
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var response ApiResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &response, nil
+}
+
+// SearchProxyUsersByMetadata searches for proxy users by metadata
+func SearchProxyUsersByMetadata(metadataKey, metadataValue string) (*SearchResponse, error) {
+	requestURL := fmt.Sprintf("%s/proxy_user/search?proxy_user_metadata.%s=%s", 
+		baseURL, metadataKey, url.QueryEscape(metadataValue))
+	
+	// Create the request
+	req, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var response SearchResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &response, nil
+}
+
+func main() {
+	// Create a proxy user with metadata
+	userMetadata := map[string]interface{}{
+		"department":     "Marketing",
+		"cost_center":    "CC-45678",
+		"project":        "Summer Campaign",
+		"is_priority":    true,
+		"employee_id": 1500,
+	}
+	
+	createResult, err := CreateProxyUserWithMetadata("john_marketing", userMetadata)
+	if err != nil {
+		fmt.Printf("Error creating proxy user: %v\n", err)
+	} else {
+		fmt.Printf("Created proxy user: %s\n", createResult.Message)
+	}
+	
+	// Update a service's metadata
+	serviceMetadata := map[string]interface{}{
+		"project":    "Fall Campaign",
+		"department": "Sales",
+		"priority":   "high",
+	}
+	
+	updateResult, err := UpdateServiceMetadata("srv-12345", serviceMetadata)
+	if err != nil {
+		fmt.Printf("Error updating service metadata: %v\n", err)
+	} else {
+		fmt.Printf("Updated service metadata: %s\n", updateResult.Message)
+	}
+	
+	// Search for proxy users in the Marketing department
+	searchResult, err := SearchProxyUsersByMetadata("department", "Marketing")
+	if err != nil {
+		fmt.Printf("Error searching for proxy users: %v\n", err)
+	} else {
+		fmt.Printf("Found %d proxy users in Marketing\n", searchResult.TotalCount)
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class PingProxiesMetadata {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public/user";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Basic API response
+    static class ApiResponse {
+        public String message;
+        public Object data;
+    }
+    
+    // Search response
+    static class SearchResponse {
+        public List<Map<String, Object>> data;
+        
+        @JsonProperty("item_count")
+        public int itemCount;
+        
+        public String message;
+        
+        public int page;
+        
+        @JsonProperty("per_page")
+        public int perPage;
+        
+        @JsonProperty("total_count")
+        public int totalCount;
+    }
+    
+    // Create a proxy user with metadata
+    public static ApiResponse createProxyUserWithMetadata(String proxyUserId, Map<String, Object> metadata) 
+            throws IOException, InterruptedException {
+        String url = BASE_URL + "/proxy_user/create";
+        
+        // Create the payload
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("proxy_user_id", proxyUserId);
+        payload.put("proxy_user_metadata", metadata);
+        
+        String jsonPayload = mapper.writeValueAsString(payload);
+        
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), ApiResponse.class);
+    }
+    
+    // Update a service's metadata
+    public static ApiResponse updateServiceMetadata(String serviceId, Map<String, Object> metadata) 
+            throws IOException, InterruptedException {
+        String url = BASE_URL + "/service/update";
+        
+        // Create the payload
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("service_id", serviceId);
+        payload.put("service_metadata", metadata);
+        
+        String jsonPayload = mapper.writeValueAsString(payload);
+        
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), ApiResponse.class);
+    }
+    
+    // Search for proxy users by metadata
+    public static SearchResponse searchProxyUsersByMetadata(String metadataKey, String metadataValue) 
+            throws IOException, InterruptedException {
+        String encodedValue = URLEncoder.encode(metadataValue, StandardCharsets.UTF_8);
+        String url = BASE_URL + "/proxy_user/search?proxy_user_metadata." + metadataKey + "=" + encodedValue;
+        
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), SearchResponse.class);
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Create a proxy user with metadata
+            Map<String, Object> userMetadata = new HashMap<>();
+            userMetadata.put("department", "Marketing");
+            userMetadata.put("cost_center", "CC-45678");
+            userMetadata.put("project", "Summer Campaign");
+            userMetadata.put("is_priority", true);
+            userMetadata.put("employee_id", 1500);
+            
+            ApiResponse createResult = createProxyUserWithMetadata("john_marketing", userMetadata);
+            System.out.println("Created proxy user: " + createResult.message);
+            
+            // Update a service's metadata
+            Map<String, Object> serviceMetadata = new HashMap<>();
+            serviceMetadata.put("project", "Fall Campaign");
+            serviceMetadata.put("department", "Sales");
+            serviceMetadata.put("priority", "high");
+            
+            ApiResponse updateResult = updateServiceMetadata("srv-12345", serviceMetadata);
+            System.out.println("Updated service metadata: " + updateResult.message);
+            
+            // Search for proxy users in the Marketing department
+            SearchResponse searchResult = searchProxyUsersByMetadata("department", "Marketing");
+            System.out.println("Found " + searchResult.totalCount + " proxy users in Marketing");
+        } catch (Exception e) {
+            System.out.println("Error working with metadata: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Example Use Cases
+
+- **Reseller customer tracking**: Store client-specific identifiers and attributes
+- **Client organization**: Track which client or project a resource belongs to
+- **Custom grouping**: Create your own grouping scheme beyond the API's built-in categories
+- **Usage tracking**: Add purpose or usage details to track resource utilization
+
+By effectively using metadata, you can extend the Byteful API to fit your organization's specific needs and workflows.

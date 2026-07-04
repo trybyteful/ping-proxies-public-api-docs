@@ -1,0 +1,231 @@
+---
+title: 'Analytics and Usage Tracking'
+description: 'Understanding the analytics, logging, and tracking systems in the Byteful API'
+---
+
+The Byteful API provides comprehensive analytics and usage tracking capabilities to help you monitor and optimize your proxy infrastructure. This guide explains the different components of the tracking system, how they work together, and how to access them through the API.
+
+## Analytics Components
+
+Byteful employs multiple complementary systems to track and analyze proxy usage:
+
+- **Raw Logs (`log`)**: Detailed individual request data, retained for 7 days
+- **Log Summaries (`log_summary`)**: Aggregated daily usage patterns, retained for 90+ days
+- **Residential Ledger (`residential_ledger`)**: Residential data accounting records, retained indefinitely
+- **Mobile Ledger (`mobile_ledger`)**: Mobile data accounting records, retained indefinitely
+- **Analytics Graphs**: Visualizations generated from logs and summaries, with indefinite historical data access
+
+The `/analytics/graph` endpoint processes data from both logs and log summaries to provide comprehensive visualizations regardless of the age of the data being analyzed.
+
+## Log Objects
+
+### Raw Logs (`log`)
+
+Raw logs represent individual proxy requests and provide the most detailed information. They are stored for 7 days.
+
+- Tracked at the `proxy_user_id` level
+- Created for every single proxy request
+- Contains detailed information such as:
+  - Client IP address
+  - Request size in bytes
+  - HTTP status/error codes
+  - Precise request datetime
+  - Authentication type
+  - Hostname being accessed
+  - Geographic information (country, city)
+  - ASN information
+
+Example raw log object:
+
+```json
+{
+  "log_id": "123e4567-e89b-12d3-a456-426614174000",
+  "proxy_user_id": "stevejobs",
+  "log_network": "isp",
+  "log_protocol": "http",
+  "log_hostname": "apple.com",
+  "log_client_ip_address": "17.172.224.1",
+  "log_total_bytes": 5120,
+  "log_request_datetime": "2025-04-01 13:00:00",
+  "country_id": "us",
+  "city_alias": "cupertino",
+  "asn_id": 1299
+}
+```
+
+### Log Summaries (`log_summary`)
+
+Log summaries aggregate raw logs into daily summaries. They provide an efficient way to analyze usage patterns without storing every individual request.
+
+- Initially organized by `proxy_user_id`, `network`, and `hostname` for the first 90 days
+- After 90 days, further consolidated to just `proxy_user_id` and `network` level (hostname details are removed)
+- Includes metrics like:
+  - Total requests
+  - Total bytes transferred
+  - Success/error counts
+
+Example log summary object:
+
+```json
+{
+  "log_summary_id": "456e7890-e89b-12d3-a456-426614174000",
+  "proxy_user_id": "stevejobs",
+  "log_summary_network": "residential",
+  "log_summary_hostname": "apple.com",
+  "log_summary_requests": 100,
+  "log_summary_bytes": 10000,
+  "log_summary_period": "2025-04-01 00:00:00"
+}
+```
+
+### Residential Ledger (`residential_ledger`)
+
+The residential ledger specifically tracks data usage for residential proxies, which operate on a data-based billing model rather than a per-proxy model.
+
+- Tracks daily residential data usage at the customer account level
+- Records various types of data changes:
+  - Usage (decrements)
+  - Top-ups (increments when purchasing additional data)
+  - Service purchases (addition of data with new residential services)
+  - Refunds and adjustments (manual or automatic credits)
+- Provides a complete audit trail of all changes to your residential data allocation
+- Critical for billing and quota management
+
+Example residential ledger object:
+
+```json
+{
+  "residential_ledger_id": "123e4567-e89b-12d3-a456-426614174000",
+  "residential_ledger_bytes": 128290101,
+  "residential_ledger_requests": 1244,
+  "residential_ledger_period_date": "2025-04-01",
+  "residential_ledger_reason": "usage"
+}
+```
+
+### Mobile Ledger (`mobile_ledger`)
+
+The mobile ledger specifically tracks data usage for mobile proxies, which operate on a data-based billing model rather than a per-proxy model.
+
+- Tracks daily mobile data usage at the customer account level
+- Records various types of data changes:
+  - Usage (decrements)
+  - Top-ups (increments when purchasing additional data)
+  - Service purchases (addition of data with new mobile services)
+  - Refunds and adjustments (manual or automatic credits)
+- Provides a complete audit trail of all changes to your mobile data allocation
+- Critical for billing and quota management
+
+Example mobile ledger object:
+
+```json
+{
+  "mobile_ledger_id": "123e4567-e89b-12d3-a456-426614174000",
+  "mobile_ledger_bytes": 128290101,
+  "mobile_ledger_requests": 1244,
+  "mobile_ledger_period_date": "2025-04-01",
+  "mobile_ledger_reason": "usage"
+}
+```
+
+## Data Flow Process
+
+The tracking system follows specific data flows depending on the proxy type:
+
+### Datacenter and ISP Proxy Requests
+
+1. When a request is made through a datacenter or ISP proxy:
+   - A `log` record is created
+   - The corresponding `log_summary` is incremented or created if it doesn't exist
+
+### Residential Proxy Requests
+
+Residential proxies involve an additional tracking layer due to their data-based billing model:
+
+1. When a request is made through a residential proxy:
+   - A `log` record is created
+   - The corresponding `log_summary` is incremented or created
+   - The customer's `residential_ledger` usage record is incremented or created
+
+### Mobile Proxy Requests
+
+Mobile proxies involve an additional tracking layer due to their data-based billing model:
+
+1. When a request is made through a mobile proxy:
+   - A `log` record is created
+   - The corresponding `log_summary` is incremented or created
+   - The customer's `mobile_ledger` usage record is incremented or created
+
+## Accessing Analytics Data
+
+### Residential & Mobile Ledger Endpoints
+
+To monitor residential data usage:
+
+```
+GET /public/user/residential_ledger/search
+GET /public/user/residential_ledger/retrieve/{residential_ledger_id}
+```
+
+These endpoints allow you to track daily customer usage and top-ups for residential proxies.
+
+To monitor mobile data usage:
+
+```
+GET /public/user/mobile_ledger/search
+GET /public/user/mobile_ledger/retrieve/{mobile_ledger_id}
+```
+
+These endpoints allow you to track daily customer usage and top-ups for mobile proxies.
+
+### Analytics Graph Endpoint
+
+For visualizing usage patterns and trends:
+
+```
+GET /public/user/analytics/graph
+```
+
+This powerful endpoint:
+- Automatically analyzes logs and log summary records
+- Produces summaries and graphing data over specified time periods
+- Supports filtering by proxy user, network, and hostname
+- Offers flexible time intervals (minute, hour, day, month)
+
+### Raw Log Endpoints
+
+For detailed troubleshooting within the 7-day retention window:
+
+```
+GET /public/user/log/search
+GET /public/user/log/retrieve/{log_id}
+```
+
+### Log Summary Endpoints
+
+For aggregated historical data analysis:
+
+```
+GET /public/user/log_summary/search
+GET /public/user/log_summary/retrieve/{log_summary_id}
+```
+
+## Endpoint Selection Guide
+
+Use `/analytics/graph` for most monitoring needs. Use `/log` or `/log_summary` for detailed breakdowns by hostname, proxy user, or network. Use `/residential_ledger` for residential data tracking and `/mobile_ledger` for mobile data tracking.
+
+## Reference Table: Analytics Endpoints
+
+| Endpoint | Purpose | Retention | Granularity |
+|----------|---------|-----------|-------------|
+| `/log/search` | Search raw logs | 7 days | Individual requests |
+| `/log/retrieve/{log_id}` | Get specific raw log | 7 days | Individual request |
+| `/log_summary/search` | Search log summaries | 90+ days | Daily aggregations |
+| `/log_summary/retrieve/{log_summary_id}` | Get specific log summary | 90+ days | Daily aggregation |
+| `/residential_ledger/search` | Search residential usage records | Indefinite | Daily usage |
+| `/residential_ledger/retrieve/{residential_ledger_id}` | Get specific residential usage entry | Indefinite | Daily usage |
+| `/mobile_ledger/search` | Search mobile usage records | Indefinite | Daily usage |
+| `/mobile_ledger/retrieve/{mobile_ledger_id}` | Get specific mobile usage entry | Indefinite | Daily usage |
+| `/analytics/graph` | Visualize usage patterns | Indefinite | Configurable intervals |
+| `/residential/summary` | Get overall residential data status | Current | Account-level summary |
+| `/mobile/summary` | Get overall mobile data status | Current | Account-level summary |

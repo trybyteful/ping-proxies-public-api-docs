@@ -1,0 +1,104 @@
+---
+title: 'Proxy Testing Overview'
+description: 'How proxy testing works on the Byteful API.'
+---
+
+In an increasingly interconnected world, measuring proxy performance across different regions is critical. Our global infrastructure spans the United States, Europe, and Asia, allowing you to test your proxies from multiple vantage points. This way, you gain a clear understanding of real-world latency and reliability, ensuring that your users experience consistently high performance, no matter where they are located.
+
+Below you can see how the Byteful API distributes proxy tests across multiple servers and returns combined results.
+The Python script example shows how to simply create a test run for a single proxy.
+
+## What happens when you create a proxy tester? 
+
+```mermaid
+graph TD
+    A["Create Proxy Test Run<br/><small>[POST] /public/user/proxy_test_run/create</small>"]:::userAction
+    A --> B[("Distribute Tests Across Servers")]:::systemAction
+    
+    B --> C1[("Server 1<br/>Execute Tests")]:::serverAction
+    B --> C2[("Server 2<br/>Execute Tests")]:::serverAction
+    B --> C3[("Server 3<br/>Execute Tests")]:::serverAction
+    
+    C1 --> D[("Collect & Combine Results")]:::systemAction
+    C2 --> D
+    C3 --> D
+    
+    D --> E["Proxy Test Results Returned"]:::userAction
+    
+    %% User actions styled in purple
+    classDef userAction fill:#A192EC,stroke:#553c9a,stroke-width:2px,color:#fff
+    
+    %% System actions styled as green clouds
+    classDef systemAction fill:#48bb78,stroke:#1fb356,stroke-width:2px,color:#fff
+    
+    %% Server actions styled as blue clouds
+    classDef serverAction fill:#4299e1,stroke:#2b6cb0,stroke-width:2px,color:#fff
+```
+## Example Python Script
+
+```python
+import requests
+import sys
+# API credentials
+API_PRIVATE_KEY = "your_private_key"
+API_PUBLIC_KEY = "your_public_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user"
+
+# Headers
+headers = {
+  "X-API-Public-Key": API_PUBLIC_KEY,
+  "X-API-Private-Key": API_PRIVATE_KEY,
+  "Content-Type": "application/json"
+}
+# Hardcoded proxy and test configuration
+
+PROXY_STRING = "192.168.1.100:8080:username:password"  # Replace with your actual proxy
+TARGET_URL = "https://byteful.com"
+TEST_SERVER_ID = "newyork-3-digitalocean-proxytester-1"  # Replace with actual server ID
+
+# Create the test payload
+payload = {
+    "proxies": [{"proxy_string": PROXY_STRING}],
+    "proxy_tester_server_id": [TEST_SERVER_ID],
+    "urls": [TARGET_URL],
+}
+try:
+    response = requests.post(f"{BASE_URL}/proxy_test_run/create", json=payload, headers=headers)
+    if response.status_code != 200:
+        print(f"❌ Error: {response.status_code}")
+        print(f"Response: {response.text}")
+        sys.exit(1)
+
+    result = response.json()
+    print("\n✅ Proxy test created successfully!")
+    print(f"Response: {result}")
+
+    # Extract and display key results
+    if "data" in result:
+        for run_id, test_data in result["data"].items():
+            if "results" in test_data:
+                for test_result in test_data["results"]:
+                    is_successful = test_result.get("proxy_test_result_is_successful", "N/A")
+                    error_code = test_result.get("proxy_test_result_error_code", "N/A")
+                    response_time = test_result.get("proxy_test_result_response_time", "N/A")
+                    city = test_result.get("proxy_tester_proxy_city_name", "N/A")
+                    country = test_result.get("proxy_tester_proxy_country_id", "N/A")
+                    print(f"\nTest Results:")
+                    print(f"Is Successful: {is_successful}")
+                    print(f"Error Code: {error_code}")
+                    print(f"Response Time: {response_time}ms")
+                    print(f"Location: {city}, {country}")
+
+except Exception as e:
+    print(f"❌ Unexpected error: {e}")
+```
+<Warning>
+  **Rate Limit** API users can create a maximum of `5000` proxy_test_run sessions per day through the API by standard. Contact our support team with justification if you would like to test more proxies than this.
+</Warning>
+
+## Best Practices
+
+- Use test servers in regions where you plan to use the proxies
+- Test against different website types (search engines, APIs, content sites) to ensure broad compatibility
+- Implement regular testing to maintain service quality and catch degraded proxies early
+- Verify that proxy exit locations match your targeting requirements

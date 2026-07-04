@@ -1,0 +1,565 @@
+---
+title: "Get all proxies for a specific proxy user"
+description: "Learn how to retrieve all proxies a proxy user can access based on their access control settings"
+icon: "user-tag"
+---
+
+This example demonstrates how to fetch all proxies associated with a specific proxy user ID. The process handles the three different access types: unrestricted access, service-restricted access, and proxy-restricted access.
+
+## Overview
+
+The workflow varies based on the proxy user's `proxy_user_access_type`:
+
+1. **Retrieve the proxy user** to check their access type
+2. **If `access_type: "all"`**: Fetch all proxies in your account
+3. **If `access_type: "service_restricted"`**: Search ACLs for service IDs, then fetch proxies from those services
+4. **If `access_type: "proxy_restricted"`**: Search ACLs for proxy IDs, then fetch those specific proxies
+
+<CodeGroup>
+```python Python
+import requests
+import math
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+def get_all_proxies_for_proxy_user(proxy_user_id):
+    """
+    Get all proxies accessible by a specific proxy user.
+
+    Args:
+        proxy_user_id: The proxy user ID to get proxies for
+
+    Returns:
+        List of proxy objects
+    """
+    all_proxies = []
+
+    # Step 1: Retrieve the proxy user to check access type
+    proxy_user_url = f"{BASE_URL}/user/proxy_user/retrieve/{proxy_user_id}"
+    proxy_user_response = requests.get(proxy_user_url, headers=headers)
+
+    if proxy_user_response.status_code != 200:
+        print(f"Error retrieving proxy user: {proxy_user_response.status_code}")
+        return []
+
+    proxy_user_data = proxy_user_response.json()["data"]
+    access_type = proxy_user_data.get("proxy_user_access_type", "all")
+
+    print(f"Proxy user {proxy_user_id} has access_type: {access_type}")
+
+    # Step 2: Handle based on access type
+    if access_type == "all":
+        # Unrestricted access - get all proxies
+        print("Fetching all proxies (unrestricted access)...")
+        all_proxies = fetch_all_proxies()
+
+    elif access_type == "service_restricted":
+        # Service-restricted - get ACLs, then fetch proxies by service
+        print("Fetching proxies from restricted services...")
+
+        # Get ACL entries for this proxy user
+        acl_url = f"{BASE_URL}/user/proxy_user_acl/search"
+        acl_params = {"proxy_user_id": proxy_user_id}
+        acl_response = requests.get(acl_url, params=acl_params, headers=headers)
+
+        if acl_response.status_code != 200:
+            print(f"Error retrieving ACLs: {acl_response.status_code}")
+            return []
+
+        acls = acl_response.json().get("data", [])
+        service_ids = [acl["service_id"] for acl in acls if "service_id" in acl]
+
+        print(f"Found {len(service_ids)} service(s): {service_ids}")
+
+        # Fetch proxies for each service
+        for service_id in service_ids:
+            proxies = fetch_proxies_by_service(service_id)
+            all_proxies.extend(proxies)
+
+    elif access_type == "proxy_restricted":
+        # Proxy-restricted - get ACLs, then fetch specific proxies
+        print("Fetching specific restricted proxies...")
+
+        # Get ACL entries for this proxy user
+        acl_url = f"{BASE_URL}/user/proxy_user_acl/search"
+        acl_params = {"proxy_user_id": proxy_user_id}
+        acl_response = requests.get(acl_url, params=acl_params, headers=headers)
+
+        if acl_response.status_code != 200:
+            print(f"Error retrieving ACLs: {acl_response.status_code}")
+            return []
+
+        acls = acl_response.json().get("data", [])
+        proxy_ids = [acl["proxy_id"] for acl in acls if "proxy_id" in acl]
+
+        print(f"Found {len(proxy_ids)} proxy/proxies")
+
+        # Fetch each specific proxy
+        for proxy_id in proxy_ids:
+            proxy = fetch_proxy_by_id(proxy_id)
+            if proxy:
+                all_proxies.append(proxy)
+
+    print(f"\nTotal proxies accessible: {len(all_proxies)}")
+    return all_proxies
+
+def fetch_all_proxies():
+    """Fetch all proxies with pagination."""
+    all_proxies = []
+    page = 1
+    per_page = 100
+
+    while True:
+        search_url = f"{BASE_URL}/user/proxy/search"
+        params = {"page": page, "per_page": per_page}
+
+        response = requests.get(search_url, params=params, headers=headers)
+        if response.status_code != 200:
+            print(f"Error on page {page}: {response.status_code}")
+            break
+
+        data = response.json()
+        proxies = data.get("data", [])
+        all_proxies.extend(proxies)
+
+        total_count = data.get("total_count", 0)
+        total_pages = math.ceil(total_count / per_page)
+
+        if page >= total_pages:
+            break
+        page += 1
+
+    return all_proxies
+
+def fetch_proxies_by_service(service_id):
+    """Fetch all proxies for a specific service."""
+    all_proxies = []
+    page = 1
+    per_page = 100
+
+    while True:
+        search_url = f"{BASE_URL}/user/proxy/search"
+        params = {"service_id": service_id, "page": page, "per_page": per_page}
+
+        response = requests.get(search_url, params=params, headers=headers)
+        if response.status_code != 200:
+            print(f"Error fetching service {service_id} page {page}: {response.status_code}")
+            break
+
+        data = response.json()
+        proxies = data.get("data", [])
+        all_proxies.extend(proxies)
+
+        total_count = data.get("total_count", 0)
+        total_pages = math.ceil(total_count / per_page)
+
+        if page >= total_pages:
+            break
+        page += 1
+
+    return all_proxies
+
+def fetch_proxy_by_id(proxy_id):
+    """Fetch a specific proxy by ID."""
+    proxy_url = f"{BASE_URL}/user/proxy/retrieve/{proxy_id}"
+    response = requests.get(proxy_url, headers=headers)
+
+    if response.status_code != 200:
+        print(f"Error fetching proxy {proxy_id}: {response.status_code}")
+        return None
+
+    return response.json().get("data")
+
+# Example usage
+if __name__ == "__main__":
+    proxy_user_id = "your_proxy_user_id"
+    proxies = get_all_proxies_for_proxy_user(proxy_user_id)
+
+    if proxies:
+        print(f"\nFirst proxy example:")
+        print(f"  ID: {proxies[0].get('proxy_id')}")
+        print(f"  IP: {proxies[0].get('proxy_ip_address')}")
+        print(f"  Type: {proxies[0].get('proxy_type')}")
+```
+
+```javascript JavaScript
+const axios = require('axios');
+
+// API credentials
+const API_PUBLIC_KEY = "your_public_key";
+const API_PRIVATE_KEY = "your_private_key";
+const BASE_URL = "https://api.byteful.com/1.0/public";
+
+const headers = {
+  "X-API-Public-Key": API_PUBLIC_KEY,
+  "X-API-Private-Key": API_PRIVATE_KEY
+};
+
+async function getAllProxiesForProxyUser(proxyUserId) {
+  let allProxies = [];
+
+  try {
+    // Step 1: Retrieve the proxy user to check access type
+    const proxyUserUrl = `${BASE_URL}/user/proxy_user/retrieve/${proxyUserId}`;
+    const proxyUserResponse = await axios.get(proxyUserUrl, { headers });
+
+    const proxyUserData = proxyUserResponse.data.data;
+    const accessType = proxyUserData.proxy_user_access_type || "all";
+
+    console.log(`Proxy user ${proxyUserId} has access_type: ${accessType}`);
+
+    // Step 2: Handle based on access type
+    if (accessType === "all") {
+      // Unrestricted access - get all proxies
+      console.log("Fetching all proxies (unrestricted access)...");
+      allProxies = await fetchAllProxies();
+
+    } else if (accessType === "service_restricted") {
+      // Service-restricted - get ACLs, then fetch proxies by service
+      console.log("Fetching proxies from restricted services...");
+
+      const aclUrl = `${BASE_URL}/user/proxy_user_acl/search`;
+      const aclResponse = await axios.get(aclUrl, {
+        params: { proxy_user_id: proxyUserId },
+        headers
+      });
+
+      const acls = aclResponse.data.data || [];
+      const serviceIds = acls
+        .filter(acl => acl.service_id)
+        .map(acl => acl.service_id);
+
+      console.log(`Found ${serviceIds.length} service(s): ${serviceIds}`);
+
+      for (const serviceId of serviceIds) {
+        const proxies = await fetchProxiesByService(serviceId);
+        allProxies = [...allProxies, ...proxies];
+      }
+
+    } else if (accessType === "proxy_restricted") {
+      // Proxy-restricted - get ACLs, then fetch specific proxies
+      console.log("Fetching specific restricted proxies...");
+
+      const aclUrl = `${BASE_URL}/user/proxy_user_acl/search`;
+      const aclResponse = await axios.get(aclUrl, {
+        params: { proxy_user_id: proxyUserId },
+        headers
+      });
+
+      const acls = aclResponse.data.data || [];
+      const proxyIds = acls
+        .filter(acl => acl.proxy_id)
+        .map(acl => acl.proxy_id);
+
+      console.log(`Found ${proxyIds.length} proxy/proxies`);
+
+      for (const proxyId of proxyIds) {
+        const proxy = await fetchProxyById(proxyId);
+        if (proxy) {
+          allProxies.push(proxy);
+        }
+      }
+    }
+
+    console.log(`\nTotal proxies accessible: ${allProxies.length}`);
+    return allProxies;
+
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    return [];
+  }
+}
+
+async function fetchAllProxies() {
+  let allProxies = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    const searchUrl = `${BASE_URL}/user/proxy/search`;
+    const response = await axios.get(searchUrl, {
+      params: { page, per_page: perPage },
+      headers
+    });
+
+    const proxies = response.data.data || [];
+    allProxies = [...allProxies, ...proxies];
+
+    const totalCount = response.data.total_count || 0;
+    const totalPages = Math.ceil(totalCount / perPage);
+
+    if (page >= totalPages) break;
+    page++;
+  }
+
+  return allProxies;
+}
+
+async function fetchProxiesByService(serviceId) {
+  let allProxies = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    const searchUrl = `${BASE_URL}/user/proxy/search`;
+    const response = await axios.get(searchUrl, {
+      params: { service_id: serviceId, page, per_page: perPage },
+      headers
+    });
+
+    const proxies = response.data.data || [];
+    allProxies = [...allProxies, ...proxies];
+
+    const totalCount = response.data.total_count || 0;
+    const totalPages = Math.ceil(totalCount / perPage);
+
+    if (page >= totalPages) break;
+    page++;
+  }
+
+  return allProxies;
+}
+
+async function fetchProxyById(proxyId) {
+  try {
+    const proxyUrl = `${BASE_URL}/user/proxy/retrieve/${proxyId}`;
+    const response = await axios.get(proxyUrl, { headers });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error fetching proxy ${proxyId}: ${error.message}`);
+    return null;
+  }
+}
+
+// Example usage
+(async () => {
+  const proxyUserId = "your_proxy_user_id";
+  const proxies = await getAllProxiesForProxyUser(proxyUserId);
+
+  if (proxies.length > 0) {
+    console.log(`\nFirst proxy example:`);
+    console.log(`  ID: ${proxies[0].proxy_id}`);
+    console.log(`  IP: ${proxies[0].proxy_ip_address}`);
+    console.log(`  Type: ${proxies[0].proxy_type}`);
+  }
+})();
+```
+
+```php PHP
+<?php
+// API credentials
+$API_PUBLIC_KEY = "your_public_key";
+$API_PRIVATE_KEY = "your_private_key";
+$BASE_URL = "https://api.byteful.com/1.0/public";
+
+$headers = [
+    "X-API-Public-Key: $API_PUBLIC_KEY",
+    "X-API-Private-Key: $API_PRIVATE_KEY"
+];
+
+function makeRequest($url, $headers, $params = []) {
+    $ch = curl_init();
+
+    if (!empty($params)) {
+        $url .= '?' . http_build_query($params);
+    }
+
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return [
+        'status_code' => $httpCode,
+        'body' => json_decode($response, true)
+    ];
+}
+
+function getAllProxiesForProxyUser($baseUrl, $headers, $proxyUserId) {
+    $allProxies = [];
+
+    // Step 1: Retrieve the proxy user to check access type
+    $proxyUserUrl = "$baseUrl/user/proxy_user/retrieve/$proxyUserId";
+    $proxyUserResponse = makeRequest($proxyUserUrl, $headers);
+
+    if ($proxyUserResponse['status_code'] != 200) {
+        echo "Error retrieving proxy user\n";
+        return [];
+    }
+
+    $proxyUserData = $proxyUserResponse['body']['data'];
+    $accessType = $proxyUserData['proxy_user_access_type'] ?? 'all';
+
+    echo "Proxy user $proxyUserId has access_type: $accessType\n";
+
+    // Step 2: Handle based on access type
+    if ($accessType === 'all') {
+        echo "Fetching all proxies (unrestricted access)...\n";
+        $allProxies = fetchAllProxies($baseUrl, $headers);
+
+    } elseif ($accessType === 'service_restricted') {
+        echo "Fetching proxies from restricted services...\n";
+
+        $aclUrl = "$baseUrl/user/proxy_user_acl/search";
+        $aclResponse = makeRequest($aclUrl, $headers, ['proxy_user_id' => $proxyUserId]);
+
+        $acls = $aclResponse['body']['data'] ?? [];
+        $serviceIds = array_filter(array_map(function($acl) {
+            return $acl['service_id'] ?? null;
+        }, $acls));
+
+        echo "Found " . count($serviceIds) . " service(s)\n";
+
+        foreach ($serviceIds as $serviceId) {
+            $proxies = fetchProxiesByService($baseUrl, $headers, $serviceId);
+            $allProxies = array_merge($allProxies, $proxies);
+        }
+
+    } elseif ($accessType === 'proxy_restricted') {
+        echo "Fetching specific restricted proxies...\n";
+
+        $aclUrl = "$baseUrl/user/proxy_user_acl/search";
+        $aclResponse = makeRequest($aclUrl, $headers, ['proxy_user_id' => $proxyUserId]);
+
+        $acls = $aclResponse['body']['data'] ?? [];
+        $proxyIds = array_filter(array_map(function($acl) {
+            return $acl['proxy_id'] ?? null;
+        }, $acls));
+
+        echo "Found " . count($proxyIds) . " proxy/proxies\n";
+
+        foreach ($proxyIds as $proxyId) {
+            $proxy = fetchProxyById($baseUrl, $headers, $proxyId);
+            if ($proxy) {
+                $allProxies[] = $proxy;
+            }
+        }
+    }
+
+    echo "\nTotal proxies accessible: " . count($allProxies) . "\n";
+    return $allProxies;
+}
+
+function fetchAllProxies($baseUrl, $headers) {
+    $allProxies = [];
+    $page = 1;
+    $perPage = 100;
+
+    while (true) {
+        $searchUrl = "$baseUrl/user/proxy/search";
+        $response = makeRequest($searchUrl, $headers, ['page' => $page, 'per_page' => $perPage]);
+
+        $proxies = $response['body']['data'] ?? [];
+        $allProxies = array_merge($allProxies, $proxies);
+
+        $totalCount = $response['body']['total_count'] ?? 0;
+        $totalPages = ceil($totalCount / $perPage);
+
+        if ($page >= $totalPages) break;
+        $page++;
+    }
+
+    return $allProxies;
+}
+
+function fetchProxiesByService($baseUrl, $headers, $serviceId) {
+    $allProxies = [];
+    $page = 1;
+    $perPage = 100;
+
+    while (true) {
+        $searchUrl = "$baseUrl/user/proxy/search";
+        $response = makeRequest($searchUrl, $headers, [
+            'service_id' => $serviceId,
+            'page' => $page,
+            'per_page' => $perPage
+        ]);
+
+        $proxies = $response['body']['data'] ?? [];
+        $allProxies = array_merge($allProxies, $proxies);
+
+        $totalCount = $response['body']['total_count'] ?? 0;
+        $totalPages = ceil($totalCount / $perPage);
+
+        if ($page >= $totalPages) break;
+        $page++;
+    }
+
+    return $allProxies;
+}
+
+function fetchProxyById($baseUrl, $headers, $proxyId) {
+    $proxyUrl = "$baseUrl/user/proxy/retrieve/$proxyId";
+    $response = makeRequest($proxyUrl, $headers);
+
+    if ($response['status_code'] != 200) {
+        return null;
+    }
+
+    return $response['body']['data'];
+}
+
+// Example usage
+$proxyUserId = "your_proxy_user_id";
+$proxies = getAllProxiesForProxyUser($BASE_URL, $headers, $proxyUserId);
+
+if (count($proxies) > 0) {
+    echo "\nFirst proxy example:\n";
+    echo "  ID: " . $proxies[0]['proxy_id'] . "\n";
+    echo "  IP: " . $proxies[0]['proxy_ip_address'] . "\n";
+    echo "  Type: " . $proxies[0]['proxy_type'] . "\n";
+}
+?>
+```
+</CodeGroup>
+
+## How It Works
+
+### 1. Check Access Type
+
+First, retrieve the proxy user to determine their `proxy_user_access_type`:
+
+```json
+{
+  "proxy_user_id": "seo_team",
+  "proxy_user_access_type": "service_restricted"
+}
+```
+
+### 2. Three Different Workflows
+
+**For `access_type: "all"`:**
+- Fetch all proxies from your account using the proxy search endpoint
+- No ACL lookup needed
+
+**For `access_type: "service_restricted"`:**
+- Search Proxy User ACLs for this proxy user
+- Extract all `service_id` values from the ACL entries
+- Fetch proxies for each service using the proxy search endpoint with `service_id` filter
+
+**For `access_type: "proxy_restricted"`:**
+- Search Proxy User ACLs for this proxy user
+- Extract all `proxy_id` values from the ACL entries
+- Fetch each individual proxy using the proxy retrieve endpoint
+
+### 3. Pagination Handling
+
+For unrestricted and service-restricted access, the code handles pagination to ensure all proxies are retrieved, even when there are many results.
+
+## Related Documentation
+
+- [Proxy User ACL Object](/api-objects/proxy-user-acl)
+- [Proxy User Access Control](/api-explainers/proxy-user-access-control)
+- [Manage Proxy User ACLs](/api-examples/manage-proxy-user-acls)

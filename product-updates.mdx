@@ -1,0 +1,462 @@
+---
+title: Product Update Log
+description: "What we've changed and added to Byteful. A straightforward timeline of our improvements."
+---
+<Update label="June 2026">
+  ## Improved Proxy Observability and Debugging
+  <Frame>
+    ![Better Error Codes](/images/product-updates/2026-june/proxy-error-codes.png)
+  </Frame>
+
+  Error codes returned by our proxies have been overhauled to be both more fine-grained _and_ easier to understand. You can find the meanings of these codes in by hovering over any code you see within the network observability portion of our dashboard or by reading our documentation [here](https://documentation.byteful.com/general/debugging-and-error-codes#byteful-customer-error-reference).
+
+  Addittionally, our proxies now return headers that  allow for better correlating requests in your client to what you see in the dashboard. We provide you the request ID and the Byteful error code in the `x-byteful-request-id` and `x-byteful-status-code` headers respectively.
+</Update>
+
+<Update label="May 2026">
+  ## Mobile Proxies Proxy Count Update
+  <Frame>
+    ![Mobile Proxies Node Count](/images/product-updates/2026-may/mobile-proxies-node-count.png)
+  </Frame>
+
+  Both the dashboard and API now surface live node counts for your mobile proxy parameter selections. As you refine targeting by country, region, city, carrier, or any combination, you'll see exactly how many nodes match your criteria—making it easier to gauge pool size before you generate credentials and to fine-tune selections that are too narrow or broader than needed.
+
+  ## Introducing Mobile Proxies
+
+  <Frame>
+    ![Mobile Proxies](/images/product-updates/2026-may/mobile-proxies.png)
+  </Frame>
+
+  We've launched our mobile proxy network—over 6 million monthly IPs spanning 650+ mobile carriers, 1,500+ cities, and 190+ countries. We're extending the same pro-consumer model from our residential product to mobile traffic, including non-expiring data, making us the first major mobile proxy provider to offer data that does not expire.
+
+  Carrier Grade NAT (CGNAT) protection makes this network particularly effective against the hardest websites to access—mobile IPs are shared by many real users behind CGNAT, so target sites cannot block these addresses without also cutting off other users. For sites that aggressively ban residential or datacenter proxies, mobile is often the only option that consistently works.
+
+  [Read More →](https://byteful.com/blog/mobile-proxies-launch)
+
+  ### Key Features
+
+  * **6M+ monthly IPs across 650+ carriers** for broad targeting flexibility and expansive global reach
+  * **1,500+ cities in 190+ countries** with city-level reach across every major market
+  * **Carrier Grade NAT protection** makes target-side bans impractical and extends the useful lifespan of each address
+  * **Sub-600ms average speeds** for latency-sensitive workflows that previously required residential
+  * **Non-expiring data**—the bandwidth you buy stays yours until you use it
+  * **Dashboard and API access** with full feature parity for easy integration into your own systems
+
+  ## Network Observability Changes
+
+  We have began to collate certain hostnames based on how many unique hostnames there are for a given domain. This will primarily effect hostnames that contain unique elements, for example a UUID.
+
+  Hostnames with a high cardinality will now display in 1 of 3 formats: hostname.TLD, www.hostname.TLD or *.hostname.TLD
+
+  ### Key Changes
+
+  * **Understand Your Usage** Previously, certain hostnames that would change showed as seperate entries making it hard to track usage. The new system makes this much clearer
+  * **Dashboard Performance** Customers with a large number of requests may begin to see speed-ups as we collate more and more hostnames
+
+</Update>
+<Update label="April 2026">
+
+  ## Dashboard Overhaul
+
+  <Frame>
+    ![Byteful Dashboard Overhaul](/images/product-updates/2026-april/byteful-dashboard-overhaul.png)
+  </Frame>
+
+  We've completely rebuilt the Byteful dashboard. Born from five years of daily usage, around 10,000 hours inside the product, and over 6,000 support tickets in the last year alone—this overhaul addresses the core issue with our previous dashboard: it was intuitive, but only if you were already familiar with it.
+
+  [Read the Full Story →](https://byteful.com/blog/10000-hours-in-the-dashboard)
+
+  ### Key Changes
+
+  * **New design system** with a distinct visual identity for every data type—IPs, UUIDs, metrics, and metadata are immediately recognizable at a glance
+  * **Consistent tables** with unified filtering, sorting, pagination, and column selection across the entire platform
+  * **Fixed-width central viewport** for a more focused, readable layout with less eye movement
+  * **Product-first structure** where each service has its own space showing usage, allocation, and implementation up front
+  * **Unified IAM layer** with Proxy Users now clearly managing team members, applications, and agents across the whole platform
+  * **Contextual code examples** built from your actual account configuration—copy and use immediately, no placeholder filling
+  * **Real-time API analytics** with table and graph views for live debugging without jumping between tools
+  * **Persistent table preferences** that carry across sessions, with an easy reset option
+
+</Update>
+<Update label="April 2026">
+
+  ## Ping Proxies is Now Byteful
+
+  <Frame>
+    ![Byteful Rebrand](/images/product-updates/2026-april/byteful-rebrand.png)
+  </Frame>
+
+  We've rebranded from Ping Proxies to Byteful, marking our commitment to building the leading ethical proxy infrastructure for web scraping, large-scale data collection, and agentic AI. What started as a bootstrapped side project at the University of Leeds has grown into a platform trusted by more than 1,500 active customers processing over 20 billion requests monthly.
+
+  The name reflects the scale of what we've built—last year alone, more than thirty-one quadrillion bytes flowed through our network.
+
+  [Read the Full Story →](https://byteful.com/blog/ping-proxies-is-now-byteful)
+
+  ### What's Changed
+
+  * **New domain** at byteful.com with all applications unified under the Byteful brand
+  * **Redesigned platform** with improved proxy analytics, network observability, and enterprise team access features
+  * **Existing infrastructure** remains accessible via residential.pingproxies.com and api.pingproxies.com during the transition
+  * **No disruption** for existing customers—everything continues to work as before
+
+  ### What's Next
+
+  * **Extended API-first proxy management** and developer tooling for AI companies
+  * **TCP/IP fingerprinting** technologies for more advanced proxy management
+  * **Infrastructure designed for agentic AI** workflows at scale
+  * **New carrier partnerships**, additional product lines, and a startup program launching later this year
+
+</Update>
+
+<Update label="January 2026">
+
+  ## IPv6 Website Compatibility Checker
+
+  We've released a free tool that lets you instantly check whether any website supports IPv6 connections. Simply enter a URL and get immediate results showing IPv6 compatibility status, resolved addresses, and connection details.
+
+  This tool addresses a common pain point—manually testing IPv6 support is tedious and time-consuming. Whether you're planning IPv6 proxy deployments, auditing target sites, or troubleshooting connectivity issues, this checker gives you the answers in seconds.
+
+  [Try the IPv6 Compatibility Checker →](https://byteful.com/ipv6-website-compatibility-checker)
+
+  ### Key Features
+
+  * **Instant compatibility detection** for any website URL
+  * **DNS resolution details** showing AAAA records and IPv6 addresses
+  * **Connection testing** to verify actual IPv6 reachability
+  * **No account required**—completely free to use
+
+  ## Proxy Formatter Tool
+
+  We've launched a utility that converts proxy lists between different formats with a single click. Paste your proxies in any common format and instantly export them in the format your tools require.
+
+  Reformatting proxy lists manually is repetitive work that eats into productive time. This tool handles the conversion automatically, supporting formats like `ip:port:user:pass`, `user:pass@ip:port`, URL-encoded strings, and more.
+
+  [Try the Proxy Formatter →](https://byteful.com/proxy-formatter)
+
+  ### Key Features
+
+  * **Multi-format support** for all common proxy string formats
+  * **Batch conversion** for processing entire proxy lists at once
+  * **Protocol prefixes** with optional HTTP/HTTPS/SOCKS5 formatting
+  * **One-click copy** to clipboard for immediate use
+
+  ## Proxy List Options & Proxy User ID Search
+
+  We've added new proxy list options and the ability to search proxies by proxy user ID to the API, giving you more flexibility when managing and filtering your proxy inventory.
+
+  ### Key Features
+
+  * **Proxy list options** for more flexible proxy listing configurations
+  * **Search by proxy user ID** to quickly find proxies assigned to specific users
+
+</Update>
+
+<Update label="December 2025">
+
+  ## Proxy User ACL Rules
+
+  <Frame>
+  <iframe
+    className="w-full aspect-video rounded-xl"
+    width="90%"
+    src="https://www.youtube.com/embed/j_bXIV-tVLI"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+  />
+  </Frame>
+
+  We've introduced Proxy User Access Control Lists (ACLs), giving you fine-grained control over which proxies each proxy user can access. This feature enables precise permission management for teams, projects, AI agents, or customers operating on your account.
+
+  Previously, proxy users had broad access across your account. With ACL rules, you can now restrict users to specific services or individual proxies, ensuring your setup aligns with operational, security, and compliance requirements.
+
+  [Read the Access Control Guide →](/api-explainers/proxy-user-access-control)
+
+  ### Key Features
+
+  * **Service-restricted access** limits users to specific proxy services
+  * **Proxy-restricted access** limits users to individual proxies you choose
+  * **Flexible rule creation** through the dashboard or [API](/api-objects/proxy-user-acl)
+  * **Built-in proxy filtering** to easily select which resources to grant
+  * **Available to all users** at no additional cost
+
+  ## Enhanced Proxy Error Reporting
+
+  <Frame>
+  <iframe
+    className="w-full aspect-video rounded-xl"
+    width="90%"
+    src="https://www.youtube.com/embed/IuxHYX7Wbeg"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+  />
+  </Frame>
+
+  We've shipped a major upgrade to our Online Proxy Tester with clearer diagnostics, improved error interpretation, and global testing capabilities. This update helps you identify and resolve proxy issues faster with complete visibility into connection behavior.
+
+  The tool now shows exactly where failures occur in the request chain, explains why they happen in plain language, and suggests how to fix them. Over 115 error types have been rewritten into human-readable explanations with actionable hints.
+
+  [Try the Proxy Tester →](https://byteful.com/proxy-tester)
+
+  ### Key Features
+
+  * **Connection trace visualization** showing the full Client → Proxy Server → Target Server path
+  * **Human-readable error explanations** for 115+ error types
+  * **Hint solutions** for authentication, upstream, and network-related issues
+  * **Multi-region testing** to detect geo-specific failures and routing inconsistencies
+  * **API support** for automated testing and global error reporting
+  * **Shareable results** with expanded technical metadata
+
+</Update>
+
+<Update label="September 2025">
+
+  ## Proxy Testing Capability
+
+  <Frame>
+    ![Proxy Testing Capability](/images/product-updates/september/proxy-testing.png)
+  </Frame>
+
+  We’ve introduced a multi-region proxy testing to our API that allows you to test your proxies from multiple vantage points. This way, you gain a clear understanding of real-world latency and reliability, ensuring that your users experience consistently high performance, no matter where they are located.
+
+  [Read More →](https://byteful.com/blog/launching-our-proxy-tester-public-api)
+
+  ### Key Features
+
+  * **Tesitng across multiple regions** allows realistic world-wide measurement
+  * **Latency testing** enables performance analysis of your proxies
+  * **Test against any website** to validate real-world scenarios
+  * **Accurate geolocation data** for geographic understanding of your proxies
+  * **Instant data retrieval** so you can test quickly and reliably
+
+</Update>
+
+<Update label="August 2025">
+
+## Session TTL (Time To Live) Support
+
+<Frame>
+    ![Session TTL](/images/general/session_ttl.png)
+</Frame>
+
+We've added Session TTL functionality to provide greater control over IP address persistence. You can now specify how long to maintain the same IP address by adding TTL parameters to your proxy username, with support for minutes, hours, or days.
+
+
+
+  ## HTTP2/HTTP3 Support on Residential Network Beta
+
+  <Frame>
+    ![HTTP2/HTTP3 Support](/images/product-updates/august/august-http2-http3.gif)
+  </Frame>
+
+  HTTP2 and HTTP3 protocol support is now available on the residential network beta. This provides improved performance and connection efficiency for supported clients.
+
+  * Access the beta at: `https://beta.residential.byteful.com`
+  * Expected to ship to production within the next month.
+
+  ## HTTPS Launch on Residential Network Beta
+
+  <Frame>
+    ![HTTPS Launch](/images/product-updates/august/august-https.png)
+  </Frame>
+
+  HTTPS support is now live on the residential network beta, providing enhanced security and encrypted connections.
+
+  * Access the beta at: `https://beta.residential.byteful.com`
+  * Expected to ship to production within the next month.
+
+</Update>
+
+<Update label="July 2025">
+
+  ## Live Pool Indicators and Advanced Geographic Targeting
+
+  <Frame>
+  <iframe
+    className="w-full aspect-video rounded-xl"
+    width="90%"
+    src="https://www.youtube.com/embed/z8SW0FW--vo"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+  />
+  </Frame>
+
+  We’ve introduced real-time pool size indicators and advanced geo-targeting to give users greater transparency and control. This update supports our commitment to network visibility, responsible usage, and more precise, data-driven decision-making.
+
+  [Read More →](https://byteful.com/blog/new-residential-targeting-options)
+
+  ### Key Features
+
+  * **Live pool size indicators** show real-time IP availability for selected parameters
+  * **U.S. state-level targeting** allows precise geographic control across all 50 states
+  * **ZIP code targeting** enables hyper-local traffic routing for granular use cases
+  * **Node counts per configuration** let you validate availability before sending requests
+  * **Dashboard and API access** gives full control via UI or integration
+
+  ## Improved Automated KYC Procedure
+  <Frame>
+    ![Byteful KYC](/images/general/kyc.png)
+  </Frame>
+  We've partnered with [Idenfy](https://www.idenfy.com/) to launch improved automated KYC procedures. We are committed to maintaining the highest ethical standards and ensuring our services are used responsibly. We have implemented a risk-based approach to customer verification that helps us maintain a secure and compliant network environment.
+
+  [Read More →](/general/kyc-policy)
+
+  ## Smartpath® Launch
+    <Frame>
+
+  <iframe
+    className="w-full aspect-video rounded-xl"
+    width="90%"
+    src="https://www.youtube.com/embed/scluCSwhb5A"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+  />
+  </Frame>
+
+  We've launched **Smartpath®**—an AI-powered residential proxy optimization system that intelligently cuts data costs by 40%. The system uses artificial intelligence to automatically determine whether each request genuinely requires a residential IP, routing non-essential requests through datacenter IPs at no charge while maintaining full performance.
+
+  [Read More →](https://byteful.com/blog/introducing-smartpath-ai-proxy)
+
+  ### Key Features
+
+  * **AI-powered optimization** that reduces data costs by up to 40%
+  * **Zero setup required**—enable with a single click or API parameter
+  * **Intelligent request routing** through datacenter IPs for non-essential traffic
+  * **Continuous learning** from hundreds of millions of network requests daily
+</Update>
+
+<Update label="June 2025">
+  ## Live Network Activity
+  <Frame>
+    ![Live Network Activity](/images/product-updates/june/live-log-viewer.png)
+  </Frame>
+  We've launched Live Network Activity—a real-time debugging interface.
+  The dashboard provides real-time detailed breakdowns of every request including elapsed time, byte counts, status codes, target hostnames, and user-friendly error messages.
+  [Read More ->](https://byteful.com/blog/live-proxy-traffic-launch)
+
+  **Key Features**
+  * Monitor requests in real-time with automatic updates
+  * View detailed metrics for each proxy connection
+  * Filter by network, proxy IP, target domain, response codes and more!
+  * Get clear explanations of status codes and error conditions
+
+  ## Residential Network Improvements in US East
+  <Frame>
+    ![Residential Network Improvements in US East](/images/product-updates/june/us-east-residential-improvements.png)
+  </Frame>
+  We've deployed major infrastructure upgrades to our US East Coast network, achieving a 61% latency reduction and 4X capacity increase to better serve the 40% of residential traffic originating from this critical region.
+
+  [Read More →](https://byteful.com/blog/residential-network-improvements-us-east)
+
+  **Key Improvements**
+
+  * 61% additional latency reduction (75% total improvement from baseline)
+  * 4X server capacity expansion in the region
+  * New Points of Presence (PoPs) added to bare-metal infrastructure
+  * Enhanced failover and redundancy capabilities
+  * Improved performance stability during peak usage periods
+  * Increased reliability for high-volume traffic handling
+
+</Update>
+
+<Update label="May 2025">
+  ## Network Observability Panel
+  <Frame>
+    ![Byteful Network Observability](/images/product-updates/may/network-observability-promo.png)
+  </Frame>
+  Our new Network Observability Panel tracks your proxy usage by hostname, proxy user and network while offering flexible filtering and visualization options.
+  <Frame>
+    ![Byteful Network Observability Panel](/images/product-updates/may/network-observability.png)
+  </Frame>
+
+  [Read More →](https://byteful.com/blog/network-observability-panel)
+
+  **Key Features**
+
+  * Filter activity by hostname, proxy user, and network for any time period
+  * Apply advanced filtering with operators like != and contains
+  * View error rates, request counts, and data usage summaries
+  * Analyze top 100 hostnames with detailed traffic statistics
+  * Monitor top 100 proxy users with performance metrics
+  * Examine traffic distribution across different networks
+  * Track usage patterns with daily traffic graphs
+  * Access hourly log summaries organized by proxy user, network, and hostname
+
+  <Frame>
+    ![Byteful Network Filtering](/images/product-updates/may/network-observability-filtering.png)
+  </Frame>
+
+  ## Residential Generator Improvements
+
+  We're excited to announce improvements to our residential endpoint generator on our dashboard.
+
+  **Key Improvements**
+
+  * Added format generation including socks5h
+  * Improved searching for city, country and ASN targeting options
+  * Availability labels have been added for city, country and ASN targeting options to allow customers to see whether nodes are available for particular options.
+
+  <Frame>
+    ![Byteful Residential Endpoint Generator](/images/product-updates/may/residential-generator.png)
+  </Frame>
+</Update>
+
+<Update label="April 2025">
+  ## Dashboard API Panel Launch
+
+  **API Key Manager**
+
+  <Frame>
+    ![API Key Management Interface](/images/product-updates/april/ping-proxies-api-key-management.png)
+  </Frame>
+
+  Create and manage API keys directly from your dashboard with just a few clicks:
+
+  * Label keys for easy tracking
+  * View creation dates
+  * Delete keys when no longer needed
+  * Create multiple keys for different applications or team members
+
+  **API Analytics**
+
+  <Frame>
+    ![API Analytics Graph](/images/product-updates/april/ping-proxies-api-graph.png)
+  </Frame>
+
+  Monitor your API usage with our new analytics dashboard:
+
+  * Track all API calls including endpoints, response codes, and timestamps
+  * View request volume over time
+  * Access complete details for every API call
+  * Easily monitor performance and troubleshoot integration issues
+
+  ## Byteful REST API Launch
+
+  We're excited to announce the general availability of our fully-featured Byteful REST API, enabling programmatic access to our platform and proxy networks.
+
+  **Major capabilities**
+
+  * Comprehensive proxy search with filtering by country, ASN, subnet, and more
+  * Residential proxy generation (sticky or rotating) tied to any proxy user
+  * Complete proxy user management (create, edit, delete, rotate passwords)
+  * Real-time analytics for detailed traffic usage across all networks
+  * Object metadata for attaching key-value pairs to resources
+  * Programmatic purchasing with complete checkout flow
+  * Powerful search operators for precise resource queries
+
+  **API management features**
+
+  * Simple API key creation and management from your dashboard
+  * Detailed request logs and usage statistics
+  * Multi-language support (Python, JavaScript/TypeScript, PHP, Go, Java)
+  * Developer-friendly documentation with OpenAPI specification
+  * Try It buttons for testing against sandbox environment
+  * Structured error definitions and request IDs for easy troubleshooting
+
+  <Frame>
+    ![Byteful API Release](/images/product-updates/april/ping-proxies-api-release.webp)
+  </Frame>
+</Update>

@@ -1,0 +1,524 @@
+---
+title: 'Filter Operators'
+description: 'Advanced filtering with operators in the Byteful API'
+---
+
+The Byteful API supports powerful search operators that enable advanced filtering beyond simple exact matching. These operators let you craft precise queries to find exactly what you need.
+
+## Available Operators
+
+The following operators are available when searching across most resources:
+
+| Operator | Description | Supported Types | Example |
+|----------|-------------|-----------------|---------|
+| `min_` | Greater than or equal (≥) | Numbers, Timestamps, Dates | `min_proxy_user_residential_bytes_limit=1000000` |
+| `max_` | Less than or equal (≤) | Numbers, Timestamps, Dates | `max_proxy_user_residential_bytes_used=500000` |
+| `like_` | Contains substring (case-insensitive) | Strings | `like_service_name=%residential%` |
+| `not_` | Not equal | All types | `not_proxy_user_is_deleted=true` |
+| `exists_` | Checks Metadata key existence | Metadata keys | `proxy_user_metadata.exists_client_id=1` |
+
+## Using Numeric Comparison Operators
+
+### Minimum Value (`min_`)
+
+The `min_` prefix finds items where the specified field is greater than or equal to the value:
+
+```
+GET /public/user/service/search?min_service_quantity=10
+```
+
+This returns services with a quantity of 10 or more.
+
+## Text Search Operators
+
+### Substring Matching (`like_`)
+
+The `like_` prefix performs a case-insensitive substring search. You can use the `%` wildcard character to match any sequence of characters:
+
+```
+GET /public/user/service/search?like_service_name=%premium%
+```
+
+This returns services with "premium" anywhere in their name (e.g., "Premium ISP", "ISP Premium Plan", "premium service").
+
+<Note>
+The `like_` operator is case-insensitive, so `like_service_name=%PREMIUM%` will also match "premium", "Premium", and any other case variation.
+</Note>
+
+## Boolean Operators
+
+### Negative Matching (`not_`)
+
+The `not_` prefix finds items where the field does not equal the specified value:
+
+```
+GET /public/user/proxy/search?not_country_id=us
+```
+
+This returns proxies that are not located in the United States.
+
+## Existence Operators
+
+### Key Existence Check (`exists_`)
+
+For metadata fields, you can check if a key exists:
+
+```
+GET /public/user/proxy_user/search?proxy_user_metadata.exists_department=1
+```
+
+This returns proxy users that have a "department" key in their metadata.
+
+## Combining Multiple Filters
+
+You can combine multiple operators in a single request to create complex queries:
+
+```
+GET /public/user/proxy/search?proxy_type=isp&country_id=gb&not_country_id=us
+```
+
+This returns active ISP proxies in Great Britain created after January 1, 2023.
+
+<Note>
+When you combine multiple filters, they are joined with AND logic. All conditions must be met for an item to be included in the results.
+</Note>
+
+## Code Examples
+
+<CodeGroup>
+```bash cURL
+# Text search with like operator - find 'premium' services
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/service/search?like_service_name=%premium%' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Negative matching - find proxies outside the US
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?not_country_id=us' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Minimum value - find services with at least 10 units
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/service/search?min_service_quantity=10' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Metadata existence check - find proxy users with department metadata
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/search?proxy_user_metadata.exists_department=true' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+# Text search with like operator - find 'premium' services
+def search_premium_services():
+    params = {"like_service_name": "%premium%"}
+    url = f"{BASE_URL}/service/search"
+    response = requests.get(url, params=params, headers=headers)
+    return response.json()
+
+# Negative matching - find active proxies
+def get_active_proxies():
+    params = {"not_proxy_status": "inactive"}
+    url = f"{BASE_URL}/proxy/search"
+    response = requests.get(url, params=params, headers=headers)
+    return response.json()
+
+# Minimum value - find services with at least 10 units
+def get_services_min_quantity(min_quantity=10):
+    params = {"min_service_quantity": min_quantity}
+    url = f"{BASE_URL}/service/search"
+    response = requests.get(url, params=params, headers=headers)
+    return response.json()
+
+# Metadata existence check - find proxy users with department metadata
+def get_users_with_department():
+    params = {"proxy_user_metadata.exists_department": "1"}
+    url = f"{BASE_URL}/proxy_user/search"
+    response = requests.get(url, params=params, headers=headers)
+    return response.json()
+
+# Example usage
+if __name__ == "__main__":
+    premium_services = search_premium_services()
+    non_us_proxies = get_non_us_proxies()
+    high_quantity_services = get_services_min_quantity(10)
+    users_with_dept = get_users_with_department()
+    
+    print(f"Premium services: {premium_services['total_count']}")
+    print(f"Non-US proxies: {non_us_proxies['total_count']}")
+    print(f"Services with 10+ units: {high_quantity_services['total_count']}")
+    print(f"Users with department metadata: {users_with_dept['total_count']}")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public/user';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY
+};
+
+// Text search with like operator - find 'premium' services
+async function searchPremiumServices() {
+  const url = new URL(`${BASE_URL}/service/search`);
+  url.searchParams.append('like_service_name', '%premium%');
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Negative matching - find active proxies
+async function getActiveProxies() {
+  const url = new URL(`${BASE_URL}/proxy/search`);
+  url.searchParams.append('not_proxy_status', 'inactive');
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Minimum value - find services with at least 10 units
+async function getServicesMinQuantity(minQuantity = 10) {
+  const url = new URL(`${BASE_URL}/service/search`);
+  url.searchParams.append('min_service_quantity', minQuantity);
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Metadata existence check - find proxy users with department metadata
+async function getUsersWithDepartment() {
+  const url = new URL(`${BASE_URL}/proxy_user/search`);
+  url.searchParams.append('proxy_user_metadata.exists_department', '1');
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Example usage
+async function main() {
+  try {
+    const premiumServices = await searchPremiumServices();
+    const nonUsProxies = await getNonUsProxies();
+    const highQuantityServices = await getServicesMinQuantity(10);
+    const usersWithDept = await getUsersWithDepartment();
+    
+    console.log(`Premium services: ${premiumServices.total_count}`);
+    console.log(`Non-US proxies: ${nonUsProxies.total_count}`);
+    console.log(`Services with 10+ units: ${highQuantityServices.total_count}`);
+    console.log(`Users with department metadata: ${usersWithDept.total_count}`);
+  } catch (error) {
+    console.error('Error fetching filtered data:', error);
+  }
+}
+
+main();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public/user';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey
+];
+
+// Helper function to make API requests
+function makeRequest($url, $headers) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return json_decode($response, true);
+}
+
+// Text search with like operator - find 'premium' services
+function searchPremiumServices($baseUrl, $headers) {
+    $url = $baseUrl . '/service/search?like_service_name=' . urlencode('%premium%');
+    return makeRequest($url, $headers);
+}
+
+// Negative matching - find active proxies
+function getActiveProxies($baseUrl, $headers) {
+    $url = $baseUrl . '/proxy/search?not_proxy_status=inactive';
+    return makeRequest($url, $headers);
+}
+
+// Minimum value - find services with at least 10 units
+function getServicesMinQuantity($baseUrl, $headers, $minQuantity = 10) {
+    $url = $baseUrl . '/service/search?min_service_quantity=' . $minQuantity;
+    return makeRequest($url, $headers);
+}
+
+// Metadata existence check - find proxy users with department metadata
+function getUsersWithDepartment($baseUrl, $headers) {
+    $url = $baseUrl . '/proxy_user/search?proxy_user_metadata.exists_department=1';
+    return makeRequest($url, $headers);
+}
+
+// Example usage
+try {
+    $premiumServices = searchPremiumServices($baseUrl, $headers);
+    $nonUsProxies = getNonUsProxies($baseUrl, $headers);
+    $highQuantityServices = getServicesMinQuantity($baseUrl, $headers, 10);
+    $usersWithDept = getUsersWithDepartment($baseUrl, $headers);
+    
+    echo "Premium services: " . $premiumServices['total_count'] . "\n";
+    echo "Non-US proxies: " . $nonUsProxies['total_count'] . "\n";
+    echo "Services with 10+ units: " . $highQuantityServices['total_count'] . "\n";
+    echo "Users with department metadata: " . $usersWithDept['total_count'] . "\n";
+} catch (Exception $e) {
+    echo "Error fetching filtered data: " . $e->getMessage() . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public/user"
+)
+
+// Response structure for API
+type ApiResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+// makeRequest is a helper function to make API requests
+func makeRequest(requestURL string) (*ApiResponse, error) {
+	// Create a new request
+	req, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response ApiResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+// SearchPremiumServices finds services with "premium" in the name
+func SearchPremiumServices() (*ApiResponse, error) {
+	requestURL := fmt.Sprintf("%s/service/search?like_service_name=%s", baseURL, url.QueryEscape("%premium%"))
+	return makeRequest(requestURL)
+}
+
+// GetActiveProxies finds proxies that are not inactive
+func GetActiveProxies() (*ApiResponse, error) {
+	requestURL := fmt.Sprintf("%s/proxy/search?not_proxy_status=inactive", baseURL)
+	return makeRequest(requestURL)
+}
+
+// GetServicesMinQuantity finds services with at least specified quantity
+func GetServicesMinQuantity(minQuantity int) (*ApiResponse, error) {
+	requestURL := fmt.Sprintf("%s/service/search?min_service_quantity=%d", baseURL, minQuantity)
+	return makeRequest(requestURL)
+}
+
+// GetUsersWithDepartment finds proxy users with department metadata
+func GetUsersWithDepartment() (*ApiResponse, error) {
+	requestURL := fmt.Sprintf("%s/proxy_user/search?proxy_user_metadata.exists_department=1", baseURL)
+	return makeRequest(requestURL)
+}
+
+func main() {
+	// Text search with like operator
+	premiumServices, err := SearchPremiumServices()
+	if err != nil {
+		fmt.Printf("Error fetching premium services: %v\n", err)
+	} else {
+		fmt.Printf("Premium services: %d\n", premiumServices.TotalCount)
+	}
+	
+	// Negative matching - non-US proxies
+	nonUsProxies, err := GetNonUsProxies()
+	if err != nil {
+		fmt.Printf("Error fetching non-US proxies: %v\n", err)
+	} else {
+		fmt.Printf("Non-US proxies: %d\n", nonUsProxies.TotalCount)
+	}
+	
+	// Minimum value
+	highQuantityServices, err := GetServicesMinQuantity(10)
+	if err != nil {
+		fmt.Printf("Error fetching high quantity services: %v\n", err)
+	} else {
+		fmt.Printf("Services with 10+ units: %d\n", highQuantityServices.TotalCount)
+	}
+	
+	// Metadata existence check
+	usersWithDept, err := GetUsersWithDepartment()
+	if err != nil {
+		fmt.Printf("Error fetching users with department: %v\n", err)
+	} else {
+		fmt.Printf("Users with department metadata: %d\n", usersWithDept.TotalCount)
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class PingProxiesFilterOperators {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public/user";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Response class to hold API data
+    static class ApiResponse {
+        public List<Map<String, Object>> data;
+        
+        @JsonProperty("item_count")
+        public int itemCount;
+        
+        public String message;
+        
+        public int page;
+        
+        @JsonProperty("per_page")
+        public int perPage;
+        
+        @JsonProperty("total_count")
+        public int totalCount;
+    }
+    
+    // Helper method to make API requests
+    private static ApiResponse makeRequest(String url) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), ApiResponse.class);
+    }
+    
+    // Text search with like operator - find 'premium' services
+    public static ApiResponse searchPremiumServices() throws IOException, InterruptedException {
+        String encodedPattern = URLEncoder.encode("%premium%", StandardCharsets.UTF_8);
+        String url = BASE_URL + "/service/search?like_service_name=" + encodedPattern;
+        return makeRequest(url);
+    }
+    
+    // Negative matching - find active proxies
+    public static ApiResponse getActiveProxies() throws IOException, InterruptedException {
+        String url = BASE_URL + "/proxy/search?not_proxy_status=inactive";
+        return makeRequest(url);
+    }
+    
+    // Minimum value - find services with at least 10 units
+    public static ApiResponse getServicesMinQuantity(int minQuantity) throws IOException, InterruptedException {
+        String url = BASE_URL + "/service/search?min_service_quantity=" + minQuantity;
+        return makeRequest(url);
+    }
+    
+    // Metadata existence check - find proxy users with department metadata
+    public static ApiResponse getUsersWithDepartment() throws IOException, InterruptedException {
+        String url = BASE_URL + "/proxy_user/search?proxy_user_metadata.exists_department=1";
+        return makeRequest(url);
+    }
+
+    public static void main(String[] args) {
+        try {
+            ApiResponse premiumServices = searchPremiumServices();
+            ApiResponse activeProxies = getActiveProxies();
+            ApiResponse highQuantityServices = getServicesMinQuantity(10);
+            ApiResponse usersWithDept = getUsersWithDepartment();
+            
+            System.out.println("Premium services: " + premiumServices.data.size());
+            System.out.println("Active proxies: " + activeProxies.data.size());
+            System.out.println("Services with 10+ units: " + highQuantityServices.data.size());
+            System.out.println("Users with department metadata: " + usersWithDept.data.size());
+        } catch (Exception e) {
+            System.out.println("Error fetching filtered data: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>

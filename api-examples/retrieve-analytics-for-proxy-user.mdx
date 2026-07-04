@@ -1,0 +1,729 @@
+---
+title: "Retrieve analytics for a proxy user on a specific network over a period"
+description: "Learn how to fetch and analyze proxy usage data for a specific proxy user on the residential network using the analytics API endpoint"
+icon: "chart-line"
+---
+
+This example demonstrates how to retrieve detailed analytics for a specific proxy user's activity on the residential network over a defined time period. You'll learn how to use the analytics endpoint to track usage patterns, monitor data consumption, and visualize request volumes with daily granularity.
+
+<CodeGroup>
+```python Python
+import requests
+from datetime import datetime, timedelta
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+def get_proxy_user_analytics(proxy_user_id, network="residential", days_ago=30, interval="day"):
+    """
+    Retrieve analytics for a specific proxy user on a given network.
+    
+    Args:
+        proxy_user_id: ID of the proxy user to analyze
+        network: Network type to filter (datacenter, isp, residential, mobile)
+        days_ago: Number of days to look back
+        interval: Time interval for data grouping (minute, hour, day, month)
+        
+    Returns:
+        Analytics data for the specified proxy user and parameters
+    """
+    # Calculate start and end dates
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days_ago)
+    
+    # Format dates for API
+    period_start = start_date.strftime("%Y-%m-%d %H:%M:%S")
+    period_end = end_date.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Build request URL with query parameters
+    url = f"{BASE_URL}/user/analytics/graph"
+    params = {
+        "proxy_user_id": proxy_user_id,
+        "network": network,
+        "period_start": period_start,
+        "period_end": period_end,
+        "interval": interval
+    }
+    
+    # Make the API request
+    response = requests.get(url, headers=headers, params=params)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+def print_analytics_summary(analytics_data):
+    """Print a summary of the analytics data"""
+    if not analytics_data:
+        print("No analytics data available")
+        return
+    
+    data = analytics_data.get("data", {})
+    
+    # Print overall summary
+    print("=== ANALYTICS SUMMARY ===")
+    print(f"Total Requests: {data.get('total_requests', 0):,}")
+    print(f"Successful Requests: {data.get('total_successful', 0):,}")
+    print(f"Failed Requests: {data.get('total_error', 0):,}")
+    print(f"Total Data Used: {data.get('total_bytes', 0) / 1024 / 1024:.2f} MB")
+    
+    # Print interval data
+    print("\n=== DAILY BREAKDOWN ===")
+    intervals = data.get("intervals", [])
+    
+    if not intervals:
+        print("No interval data available")
+        return
+    
+    # Print the top 5 days by request volume
+    sorted_intervals = sorted(intervals, key=lambda x: x.get("requests", 0), reverse=True)
+    for i, interval in enumerate(sorted_intervals[:5]):
+        print(f"{i+1}. {interval.get('interval_name', 'Unknown')}")
+        print(f"   Requests: {interval.get('requests', 0):,}")
+        print(f"   Successful: {interval.get('successful', 0):,}")
+        print(f"   Data: {interval.get('bytes', 0) / 1024 / 1024:.2f} MB")
+
+# Example usage
+if __name__ == "__main__":
+    # Configure parameters
+    PROXY_USER_ID = "your_proxy_user_id"  # Replace with your actual proxy user ID
+    NETWORK_TYPE = "residential"          # Options: datacenter, isp, residential, mobile
+    DAYS_TO_ANALYZE = 30                  # Number of days to look back
+    INTERVAL = "day"                      # Options: minute, hour, day, month
+    
+    # Fetch analytics data
+    analytics = get_proxy_user_analytics(
+        proxy_user_id=PROXY_USER_ID,
+        network=NETWORK_TYPE,
+        days_ago=DAYS_TO_ANALYZE,
+        interval=INTERVAL
+    )
+    
+    # Print summary
+    print_analytics_summary(analytics)
+```
+
+```javascript JavaScript
+const axios = require('axios');
+const moment = require('moment');
+
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Retrieve analytics for a specific proxy user on a given network
+ * @param {Object} options - Analytics query options
+ * @returns {Promise<Object>} Analytics data
+ */
+async function getProxyUserAnalytics(options) {
+  const {
+    proxyUserId,
+    network = 'residential',
+    daysAgo = 30,
+    interval = 'day'
+  } = options;
+  
+  // Calculate start and end dates
+  const endDate = moment();
+  const startDate = moment().subtract(daysAgo, 'days');
+  
+  // Format dates for API
+  const periodStart = startDate.format('YYYY-MM-DD HH:mm:ss');
+  const periodEnd = endDate.format('YYYY-MM-DD HH:mm:ss');
+  
+  try {
+    // Make API request
+    const response = await axios.get(`${BASE_URL}/user/analytics/graph`, {
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY
+      },
+      params: {
+        proxy_user_id: proxyUserId,
+        network,
+        period_start: periodStart,
+        period_end: periodEnd,
+        interval
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching analytics data:');
+    if (error.response) {
+      console.error(`Status: ${error.response.status}`);
+      console.error(error.response.data);
+    } else {
+      console.error(error.message);
+    }
+    return null;
+  }
+}
+
+/**
+ * Print a summary of the analytics data
+ * @param {Object} analyticsData - The analytics data from the API
+ */
+function printAnalyticsSummary(analyticsData) {
+  if (!analyticsData) {
+    console.log('No analytics data available');
+    return;
+  }
+  
+  const data = analyticsData.data || {};
+  
+  // Print overall summary
+  console.log('=== ANALYTICS SUMMARY ===');
+  console.log(`Total Requests: ${data.total_requests?.toLocaleString() || 0}`);
+  console.log(`Successful Requests: ${data.total_successful?.toLocaleString() || 0}`);
+  console.log(`Failed Requests: ${data.total_error?.toLocaleString() || 0}`);
+  console.log(`Total Data Used: ${((data.total_bytes || 0) / 1024 / 1024).toFixed(2)} MB`);
+  
+  // Print interval data
+  console.log('\n=== DAILY BREAKDOWN ===');
+  const intervals = data.intervals || [];
+  
+  if (!intervals.length) {
+    console.log('No interval data available');
+    return;
+  }
+  
+  // Print the top 5 days by request volume
+  const sortedIntervals = [...intervals].sort((a, b) => (b.requests || 0) - (a.requests || 0));
+  sortedIntervals.slice(0, 5).forEach((interval, i) => {
+    console.log(`${i+1}. ${interval.interval_name || 'Unknown'}`);
+    console.log(`   Requests: ${interval.requests?.toLocaleString() || 0}`);
+    console.log(`   Successful: ${interval.successful?.toLocaleString() || 0}`);
+    console.log(`   Data: ${((interval.bytes || 0) / 1024 / 1024).toFixed(2)} MB`);
+  });
+}
+
+// Example usage
+async function main() {
+  // Configure parameters
+  const PROXY_USER_ID = 'your_proxy_user_id';  // Replace with your actual proxy user ID
+  const NETWORK_TYPE = 'residential';          // Options: datacenter, isp, residential, mobile
+  const DAYS_TO_ANALYZE = 30;                  // Number of days to look back
+  const INTERVAL = 'day';                      // Options: minute, hour, day, month
+  
+  // Fetch analytics data
+  const analytics = await getProxyUserAnalytics({
+    proxyUserId: PROXY_USER_ID,
+    network: NETWORK_TYPE,
+    daysAgo: DAYS_TO_ANALYZE,
+    interval: INTERVAL
+  });
+  
+  // Print summary
+  printAnalyticsSummary(analytics);
+}
+
+main().catch(console.error);
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Retrieve analytics for a specific proxy user on a given network
+ * 
+ * @param string $proxyUserId ID of the proxy user to analyze
+ * @param string $network Network type to filter (datacenter, isp, residential, mobile)
+ * @param int $daysAgo Number of days to look back
+ * @param string $interval Time interval for data grouping (minute, hour, day, month)
+ * @return array|null Analytics data or null on error
+ */
+function getProxyUserAnalytics($apiPublicKey, $apiPrivateKey, $baseUrl, $proxyUserId, $network = 'residential', $daysAgo = 30, $interval = 'day') {
+    // Calculate start and end dates
+    $endDate = new DateTime();
+    $startDate = clone $endDate;
+    $startDate->modify("-{$daysAgo} days");
+    
+    // Format dates for API
+    $periodStart = $startDate->format('Y-m-d H:i:s');
+    $periodEnd = $endDate->format('Y-m-d H:i:s');
+    
+    // Build request URL with query parameters
+    $url = $baseUrl . '/user/analytics/graph?' . http_build_query([
+        'proxy_user_id' => $proxyUserId,
+        'network' => $network,
+        'period_start' => $periodStart,
+        'period_end' => $periodEnd,
+        'interval' => $interval
+    ]);
+    
+    // Setup authentication headers
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey
+    ];
+    
+    // Initialize cURL session
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    // Execute the request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    // Check for success
+    if ($httpCode === 200) {
+        return json_decode($response, true);
+    } else {
+        echo "Error: " . $httpCode . "\n";
+        echo $response . "\n";
+        return null;
+    }
+}
+
+/**
+ * Print a summary of the analytics data
+ * 
+ * @param array|null $analyticsData The analytics data from the API
+ */
+function printAnalyticsSummary($analyticsData) {
+    if (!$analyticsData) {
+        echo "No analytics data available\n";
+        return;
+    }
+    
+    $data = isset($analyticsData['data']) ? $analyticsData['data'] : [];
+    
+    // Print overall summary
+    echo "=== ANALYTICS SUMMARY ===\n";
+    echo "Total Requests: " . number_format($data['total_requests'] ?? 0) . "\n";
+    echo "Successful Requests: " . number_format($data['total_successful'] ?? 0) . "\n";
+    echo "Failed Requests: " . number_format($data['total_error'] ?? 0) . "\n";
+    echo "Total Data Used: " . number_format(($data['total_bytes'] ?? 0) / 1024 / 1024, 2) . " MB\n";
+    
+    // Print interval data
+    echo "\n=== DAILY BREAKDOWN ===\n";
+    $intervals = $data['intervals'] ?? [];
+    
+    if (empty($intervals)) {
+        echo "No interval data available\n";
+        return;
+    }
+    
+    // Sort intervals by request volume (descending)
+    usort($intervals, function($a, $b) {
+        return ($b['requests'] ?? 0) - ($a['requests'] ?? 0);
+    });
+    
+    // Print the top 5 days by request volume
+    for ($i = 0; $i < min(5, count($intervals)); $i++) {
+        $interval = $intervals[$i];
+        echo ($i + 1) . ". " . ($interval['interval_name'] ?? 'Unknown') . "\n";
+        echo "   Requests: " . number_format($interval['requests'] ?? 0) . "\n";
+        echo "   Successful: " . number_format($interval['successful'] ?? 0) . "\n";
+        echo "   Data: " . number_format(($interval['bytes'] ?? 0) / 1024 / 1024, 2) . " MB\n";
+    }
+}
+
+// Example usage
+// Configure parameters
+$PROXY_USER_ID = 'your_proxy_user_id';  // Replace with your actual proxy user ID
+$NETWORK_TYPE = 'residential';          // Options: datacenter, isp, residential, mobile
+$DAYS_TO_ANALYZE = 30;                  // Number of days to look back
+$INTERVAL = 'day';                      // Options: minute, hour, day, month
+
+// Fetch analytics data
+$analytics = getProxyUserAnalytics(
+    $apiPublicKey,
+    $apiPrivateKey,
+    $baseUrl,
+    $PROXY_USER_ID,
+    $NETWORK_TYPE,
+    $DAYS_TO_ANALYZE,
+    $INTERVAL
+);
+
+// Print summary
+printAnalyticsSummary($analytics);
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"sort"
+	"time"
+)
+
+// API credentials
+const (
+	APIPublicKey  = "your_public_key"
+	APIPrivateKey = "your_private_key"
+	BaseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// AnalyticsResponse represents the API response for analytics
+type AnalyticsResponse struct {
+	Data    AnalyticsData `json:"data"`
+	Message string        `json:"message"`
+}
+
+// AnalyticsData contains the actual analytics information
+type AnalyticsData struct {
+	Intervals       []IntervalData `json:"intervals"`
+	TotalRequests   int            `json:"total_requests"`
+	TotalSuccessful int            `json:"total_successful"`
+	TotalError      int            `json:"total_error"`
+	TotalBytes      int64          `json:"total_bytes"`
+}
+
+// IntervalData contains analytics for a specific time interval
+type IntervalData struct {
+	Interval     string `json:"interval"`
+	IntervalName string `json:"interval_name"`
+	Requests     int    `json:"requests"`
+	Successful   int    `json:"successful"`
+	Error        int    `json:"error"`
+	Bytes        int64  `json:"bytes"`
+}
+
+// GetProxyUserAnalytics retrieves analytics for a specific proxy user
+func GetProxyUserAnalytics(proxyUserID, network string, daysAgo int, interval string) (*AnalyticsResponse, error) {
+	// Calculate start and end dates
+	endDate := time.Now()
+	startDate := endDate.AddDate(0, 0, -daysAgo)
+	
+	// Format dates for API
+	periodStart := startDate.Format("2006-01-02 15:04:05")
+	periodEnd := endDate.Format("2006-01-02 15:04:05")
+	
+	// Build request URL with query parameters
+	apiURL, err := url.Parse(fmt.Sprintf("%s/user/analytics/graph", BaseURL))
+	if err != nil {
+		return nil, err
+	}
+	
+	query := apiURL.Query()
+	query.Add("proxy_user_id", proxyUserID)
+	query.Add("network", network)
+	query.Add("period_start", periodStart)
+	query.Add("period_end", periodEnd)
+	query.Add("interval", interval)
+	apiURL.RawQuery = query.Encode()
+	
+	// Create a new request
+	req, err := http.NewRequest("GET", apiURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add authentication headers
+	req.Header.Add("X-API-Public-Key", APIPublicKey)
+	req.Header.Add("X-API-Private-Key", APIPrivateKey)
+	
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	// Check for success
+	if resp.StatusCode != 200 {
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error: %d, details: %s", resp.StatusCode, string(bodyBytes))
+	}
+	
+	// Parse the response
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var analytics AnalyticsResponse
+	err = json.Unmarshal(bodyBytes, &analytics)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &analytics, nil
+}
+
+// PrintAnalyticsSummary prints a summary of the analytics data
+func PrintAnalyticsSummary(analytics *AnalyticsResponse) {
+	if analytics == nil {
+		fmt.Println("No analytics data available")
+		return
+	}
+	
+	data := analytics.Data
+	
+	// Print overall summary
+	fmt.Println("=== ANALYTICS SUMMARY ===")
+	fmt.Printf("Total Requests: %d\n", data.TotalRequests)
+	fmt.Printf("Successful Requests: %d\n", data.TotalSuccessful)
+	fmt.Printf("Failed Requests: %d\n", data.TotalError)
+	fmt.Printf("Total Data Used: %.2f MB\n", float64(data.TotalBytes)/(1024*1024))
+	
+	// Print interval data
+	fmt.Println("\n=== DAILY BREAKDOWN ===")
+	intervals := data.Intervals
+	
+	if len(intervals) == 0 {
+		fmt.Println("No interval data available")
+		return
+	}
+	
+	// Sort intervals by request volume (descending)
+	sort.Slice(intervals, func(i, j int) bool {
+		return intervals[i].Requests > intervals[j].Requests
+	})
+	
+	// Print the top 5 days by request volume
+	count := 5
+	if len(intervals) < count {
+		count = len(intervals)
+	}
+	
+	for i := 0; i < count; i++ {
+		interval := intervals[i]
+		fmt.Printf("%d. %s\n", i+1, interval.IntervalName)
+		fmt.Printf("   Requests: %d\n", interval.Requests)
+		fmt.Printf("   Successful: %d\n", interval.Successful)
+		fmt.Printf("   Data: %.2f MB\n", float64(interval.Bytes)/(1024*1024))
+	}
+}
+
+func main() {
+	// Configure parameters
+	proxyUserID := "your_proxy_user_id"  // Replace with your actual proxy user ID
+	networkType := "residential"         // Options: datacenter, isp, residential, mobile
+	daysToAnalyze := 30                  // Number of days to look back
+	intervalType := "day"                // Options: minute, hour, day, month
+	
+	// Fetch analytics data
+	analytics, err := GetProxyUserAnalytics(proxyUserID, networkType, daysToAnalyze, intervalType)
+	if err != nil {
+		fmt.Printf("Error fetching analytics: %v\n", err)
+		return
+	}
+	
+	// Print summary
+	PrintAnalyticsSummary(analytics)
+}
+```
+
+```java Java
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+public class ProxyUserAnalytics {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final NumberFormat numberFormat = NumberFormat.getInstance();
+    
+    // Response classes
+    static class AnalyticsResponse {
+        public AnalyticsData data;
+        public String message;
+    }
+    
+    static class AnalyticsData {
+        public List<IntervalData> intervals;
+        
+        @JsonProperty("total_requests")
+        public int totalRequests;
+        
+        @JsonProperty("total_successful")
+        public int totalSuccessful;
+        
+        @JsonProperty("total_error")
+        public int totalError;
+        
+        @JsonProperty("total_bytes")
+        public long totalBytes;
+    }
+    
+    static class IntervalData {
+        public String interval;
+        
+        @JsonProperty("interval_name")
+        public String intervalName;
+        
+        public int requests;
+        public int successful;
+        public int error;
+        public long bytes;
+    }
+    
+    /**
+     * Retrieve analytics for a specific proxy user on a given network
+     * 
+     * @param proxyUserId ID of the proxy user to analyze
+     * @param network Network type to filter (datacenter, isp, residential, mobile)
+     * @param daysAgo Number of days to look back
+     * @param interval Time interval for data grouping (minute, hour, day, month)
+     * @return Analytics data
+     */
+    public static AnalyticsResponse getProxyUserAnalytics(
+            String proxyUserId, String network, int daysAgo, String interval) throws IOException, InterruptedException {
+        
+        // Calculate start and end dates
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(daysAgo);
+        
+        // Format dates for API
+        String periodStart = startDate.format(formatter);
+        String periodEnd = endDate.format(formatter);
+        
+        // Build request URL with query parameters
+        String url = String.format("%s/user/analytics/graph?proxy_user_id=%s&network=%s&period_start=%s&period_end=%s&interval=%s",
+                BASE_URL,
+                URLEncoder.encode(proxyUserId, StandardCharsets.UTF_8),
+                URLEncoder.encode(network, StandardCharsets.UTF_8),
+                URLEncoder.encode(periodStart, StandardCharsets.UTF_8),
+                URLEncoder.encode(periodEnd, StandardCharsets.UTF_8),
+                URLEncoder.encode(interval, StandardCharsets.UTF_8));
+        
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Check for success
+        if (response.statusCode() != 200) {
+            throw new IOException("API error: " + response.statusCode() + ", details: " + response.body());
+        }
+        
+        // Parse the response
+        return mapper.readValue(response.body(), AnalyticsResponse.class);
+    }
+    
+    /**
+     * Print a summary of the analytics data
+     * 
+     * @param analytics The analytics data from the API
+     */
+    public static void printAnalyticsSummary(AnalyticsResponse analytics) {
+        if (analytics == null) {
+            System.out.println("No analytics data available");
+            return;
+        }
+        
+        AnalyticsData data = analytics.data;
+        
+        // Print overall summary
+        System.out.println("=== ANALYTICS SUMMARY ===");
+        System.out.println("Total Requests: " + numberFormat.format(data.totalRequests));
+        System.out.println("Successful Requests: " + numberFormat.format(data.totalSuccessful));
+        System.out.println("Failed Requests: " + numberFormat.format(data.totalError));
+        System.out.printf("Total Data Used: %.2f MB%n", data.totalBytes / (1024.0 * 1024.0));
+        
+        // Print interval data
+        System.out.println("\n=== DAILY BREAKDOWN ===");
+        List<IntervalData> intervals = data.intervals;
+        
+        if (intervals == null || intervals.isEmpty()) {
+            System.out.println("No interval data available");
+            return;
+        }
+        
+        // Sort intervals by request volume (descending)
+        List<IntervalData> sortedIntervals = new ArrayList<>(intervals);
+        sortedIntervals.sort(Comparator.comparing(i -> -i.requests));
+        
+        // Print the top 5 days by request volume
+        int count = Math.min(5, sortedIntervals.size());
+        for (int i = 0; i < count; i++) {
+            IntervalData interval = sortedIntervals.get(i);
+            System.out.println((i + 1) + ". " + interval.intervalName);
+            System.out.println("   Requests: " + numberFormat.format(interval.requests));
+            System.out.println("   Successful: " + numberFormat.format(interval.successful));
+            System.out.printf("   Data: %.2f MB%n", interval.bytes / (1024.0 * 1024.0));
+        }
+    }
+    
+    public static void main(String[] args) {
+        try {
+            // Configure parameters
+            String PROXY_USER_ID = "your_proxy_user_id";  // Replace with your actual proxy user ID
+            String NETWORK_TYPE = "residential";          // Options: datacenter, isp, residential, mobile
+            int DAYS_TO_ANALYZE = 30;                     // Number of days to look back
+            String INTERVAL = "day";                      // Options: minute, hour, day, month
+            
+            // Fetch analytics data
+            AnalyticsResponse analytics = getProxyUserAnalytics(
+                    PROXY_USER_ID,
+                    NETWORK_TYPE,
+                    DAYS_TO_ANALYZE,
+                    INTERVAL
+            );
+            
+            // Print summary
+            printAnalyticsSummary(analytics);
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Key Features Explained
+
+### Analytics Parameters
+
+1. **Proxy User ID**: Target a specific proxy user for usage analysis
+2. **Network Type**: Filter by network infrastructure (residential, mobile, ISP, or datacenter)
+3. **Time Period**: Define start and end dates for the analysis window
+4. **Interval Granularity**: Group data by minute, hour, day, or month

@@ -1,0 +1,629 @@
+---
+title: "Exporting a list of proxies from a particular service"
+description: "Learn how to export a formatted list of proxies from a specific service using the list_by_search endpoint"
+icon: "file-export"
+---
+
+This example demonstrates how to export a formatted list of proxies from a specific service using the `list_by_search` endpoint with filtering parameters. Unlike the basic search, this endpoint returns ready-to-use proxy strings in your desired format.
+
+<CodeGroup>
+```python Python
+import requests
+import os
+from datetime import datetime
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+def export_service_proxies(service_id):
+    """
+    Export a formatted list of proxies from a specific service.
+    
+    Note: You can modify format_type and protocol parameters to get different formats:
+    - format_type options: "standard", "http", "socks5", "socks5h"
+    - protocol options: "http" or "socks5"
+    
+    Args:
+        service_id: ID of the service to export proxies from
+        
+    Returns:
+        List of formatted proxy strings
+    """
+    # Set up the parameters for list_by_search
+    params = {
+        "service_id": service_id,
+        "list_format": "standard",     # You can change this to "http", "socks5", or "socks5h"
+        "list_protocol": "http",       # You can change this to "socks5"
+        "list_version": "ipv4",        # IP version
+        "list_authentication": "username_and_password"  # Authentication type
+    }
+    
+    # Make request to the list_by_search endpoint
+    response = requests.get(
+        f"{BASE_URL}/user/proxy/list_by_search",
+        params=params,
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return []
+    
+    data = response.json()
+    
+    # The list endpoint returns the formatted proxies directly in data
+    proxy_list = data["data"]
+    
+    print(f"Successfully retrieved {len(proxy_list)} formatted proxies from service {service_id}")
+    return proxy_list
+
+def export_to_file(proxy_list, service_id):
+    """Export proxy list to a file."""
+    # Create a default filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"service_{service_id}_proxies_{timestamp}.txt"
+    
+    # Write the proxy list to a file
+    with open(filename, "w") as file:
+        for proxy in proxy_list:
+            file.write(f"{proxy}\n")
+    
+    print(f"Exported {len(proxy_list)} proxies to {filename}")
+    return filename
+
+# Example usage
+if __name__ == "__main__":
+    # Replace with your actual service ID
+    SERVICE_ID = "API-1234-5678"
+    
+    # Get proxies
+    proxy_list = export_service_proxies(SERVICE_ID)
+    
+    # Export to file
+    if proxy_list:
+        export_to_file(proxy_list, SERVICE_ID)
+    
+    # Print sample output
+    if proxy_list:
+        print(f"\nSample output: {proxy_list[0]}")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Export a formatted list of proxies from a specific service
+ * 
+ * Note: You can modify formatType and protocol parameters to get different formats:
+ * - formatType options: "standard", "http", "socks5", "socks5h"
+ * - protocol options: "http" or "socks5"
+ * 
+ * @param {string} serviceId - ID of the service to export proxies from
+ * @returns {Promise<Array>} List of formatted proxy strings
+ */
+async function exportServiceProxies(serviceId) {
+  // Set up the parameters for list_by_search
+  const url = new URL(`${BASE_URL}/user/proxy/list_by_search`);
+  const params = {
+    'service_id': serviceId,
+    'list_format': 'standard',    // You can change this to "http", "socks5", or "socks5h"
+    'list_protocol': 'http',      // You can change this to "socks5"
+    'list_version': 'ipv4',       // IP version
+    'list_authentication': 'username_and_password'  // Authentication type
+  };
+  
+  // Add all params to URL
+  Object.keys(params).forEach(key => 
+    url.searchParams.append(key, params[key])
+  );
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // The list endpoint returns the formatted proxies directly in data
+    const proxyList = data.data;
+    
+    console.log(`Successfully retrieved ${proxyList.length} formatted proxies from service ${serviceId}`);
+    return proxyList;
+    
+  } catch (error) {
+    console.error('Error retrieving proxy list:', error);
+    return [];
+  }
+}
+
+/**
+ * Export proxy list to a file
+ * @param {Array} proxyList - List of proxy strings
+ * @param {string} serviceId - Service ID for file naming
+ * @returns {string} Filename of the exported file
+ */
+function exportToFile(proxyList, serviceId) {
+  // In browser context, create a download
+  if (typeof window !== 'undefined') {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `service_${serviceId}_proxies_${timestamp}.txt`;
+    
+    // Create a blob with the proxy list
+    const content = proxyList.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    
+    // Create a download link and trigger it
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+    
+    console.log(`Exported ${proxyList.length} proxies to ${filename}`);
+    return filename;
+  } 
+  // In Node.js context, use fs
+  else if (typeof require !== 'undefined') {
+    const fs = require('fs');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `service_${serviceId}_proxies_${timestamp}.txt`;
+    
+    fs.writeFileSync(filename, proxyList.join('\n'));
+    
+    console.log(`Exported ${proxyList.length} proxies to ${filename}`);
+    return filename;
+  }
+  else {
+    console.log('Unable to export file in current environment');
+    return null;
+  }
+}
+
+// Example usage in Node.js
+async function main() {
+  // Replace with your actual service ID
+  const SERVICE_ID = 'API-1234-5678';
+  
+  // Get proxies
+  const proxyList = await exportServiceProxies(SERVICE_ID);
+  
+  // Export to file
+  if (proxyList.length > 0) {
+    exportToFile(proxyList, SERVICE_ID);
+  }
+  
+  // Print sample output
+  if (proxyList.length > 0) {
+    console.log(`\nSample output: ${proxyList[0]}`);
+  }
+}
+
+// Run the example if in Node.js
+if (typeof window === 'undefined') {
+  main().catch(console.error);
+}
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Export a formatted list of proxies from a specific service
+ * 
+ * Note: You can modify format_type and protocol parameters to get different formats:
+ * - format_type options: "standard", "http", "socks5", "socks5h"
+ * - protocol options: "http" or "socks5"
+ * 
+ * @param string $apiPublicKey API public key
+ * @param string $apiPrivateKey API private key
+ * @param string $baseUrl API base URL
+ * @param string $serviceId ID of the service to export proxies from
+ * @return array List of formatted proxy strings
+ */
+function exportServiceProxies($apiPublicKey, $apiPrivateKey, $baseUrl, $serviceId) {
+    // Headers for authentication
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey
+    ];
+    
+    // Set up the parameters for list_by_search
+    $params = [
+        'service_id' => $serviceId,
+        'list_format' => 'standard',    // You can change this to "http", "socks5", or "socks5h"
+        'list_protocol' => 'http',      // You can change this to "socks5"
+        'list_version' => 'ipv4',       // IP version
+        'list_authentication' => 'username_and_password'  // Authentication type
+    ];
+    
+    // Build query string
+    $queryString = http_build_query($params);
+    
+    // Make request to the list_by_search endpoint
+    $ch = curl_init($baseUrl . '/user/proxy/list_by_search?' . $queryString);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        echo "Error: " . $httpCode . "\n";
+        echo $response . "\n";
+        return [];
+    }
+    
+    $data = json_decode($response, true);
+    
+    // The list endpoint returns the formatted proxies directly in data
+    $proxyList = $data['data'];
+    
+    echo "Successfully retrieved " . count($proxyList) . " formatted proxies from service {$serviceId}\n";
+    return $proxyList;
+}
+
+/**
+ * Export proxy list to a file
+ * 
+ * @param array $proxyList List of proxy strings
+ * @param string $serviceId Service ID for file naming
+ * @return string Filename of the exported file
+ */
+function exportToFile($proxyList, $serviceId) {
+    // Create a default filename with timestamp
+    $timestamp = date('Ymd_His');
+    $filename = "service_{$serviceId}_proxies_{$timestamp}.txt";
+    
+    // Write the proxy list to a file
+    $file = fopen($filename, "w");
+    foreach ($proxyList as $proxy) {
+        fwrite($file, $proxy . "\n");
+    }
+    fclose($file);
+    
+    echo "Exported " . count($proxyList) . " proxies to {$filename}\n";
+    return $filename;
+}
+
+// Example usage
+// Replace with your actual service ID
+$serviceId = 'API-1234-5678';
+
+// Get proxies
+$proxyList = exportServiceProxies($apiPublicKey, $apiPrivateKey, $baseUrl, $serviceId);
+
+// Export to file
+if (!empty($proxyList)) {
+    exportToFile($proxyList, $serviceId);
+}
+
+// Print sample output
+if (!empty($proxyList)) {
+    echo "\nSample output: " . $proxyList[0] . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// ProxyListResponse holds the structure of the API list response
+type ProxyListResponse struct {
+	Data    []string `json:"data"`
+	Message string   `json:"message"`
+}
+
+// ExportServiceProxies retrieves all proxies from a specific service in a formatted list
+// Note: You can modify formatType and protocol parameters to get different formats:
+// - formatType options: "standard", "http", "socks5", "socks5h"
+// - protocol options: "http" or "socks5"
+func ExportServiceProxies(serviceId string) ([]string, error) {
+	// Create a new HTTP client
+	client := &http.Client{}
+	
+	// Build the URL with query parameters
+	baseEndpoint := fmt.Sprintf("%s/user/proxy/list_by_search", baseURL)
+	u, err := url.Parse(baseEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	
+	q := u.Query()
+	q.Add("service_id", serviceId)
+	q.Add("list_format", "standard")    // You can change this to "http", "socks5", or "socks5h"
+	q.Add("list_protocol", "http")      // You can change this to "socks5"
+	q.Add("list_version", "ipv4")       // IP version
+	q.Add("list_authentication", "username_and_password")  // Authentication type
+	
+	u.RawQuery = q.Encode()
+	
+	// Create the request
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add authentication headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	
+	// Execute the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("error: %d", resp.StatusCode)
+	}
+	
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var listResponse ProxyListResponse
+	err = json.Unmarshal(body, &listResponse)
+	if err != nil {
+		return nil, err
+	}
+	
+	fmt.Printf("Successfully retrieved %d formatted proxies from service %s\n", len(listResponse.Data), serviceId)
+	return listResponse.Data, nil
+}
+
+// ExportToFile exports proxy list to a file
+func ExportToFile(proxyList []string, serviceId string) (string, error) {
+	// Create a default filename with timestamp
+	timestamp := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("service_%s_proxies_%s.txt", serviceId, timestamp)
+	
+	// Create file
+	file, err := os.Create(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	
+	// Write each proxy on a new line
+	for _, proxy := range proxyList {
+		_, err := file.WriteString(proxy + "\n")
+		if err != nil {
+			return "", err
+		}
+	}
+	
+	fmt.Printf("Exported %d proxies to %s\n", len(proxyList), filename)
+	return filename, nil
+}
+
+func main() {
+	// Replace with your actual service ID
+	serviceId := "API-1234-5678"
+	
+	// Get proxies
+	proxyList, err := ExportServiceProxies(serviceId)
+	if err != nil {
+		fmt.Printf("Error retrieving proxies: %v\n", err)
+		return
+	}
+	
+	// Export to file
+	if len(proxyList) > 0 {
+		_, err := ExportToFile(proxyList, serviceId)
+		if err != nil {
+			fmt.Printf("Error exporting proxies: %v\n", err)
+		}
+	}
+	
+	// Print sample output
+	if len(proxyList) > 0 {
+		fmt.Printf("\nSample output: %s\n", proxyList[0])
+	}
+}
+```
+
+```java Java
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class ExportServiceProxies {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // POJO for API response
+    static class ProxyListResponse {
+        public List<String> data;
+        public String message;
+    }
+    
+    /**
+     * Export a formatted list of proxies from a specific service
+     * 
+     * Note: You can modify formatType and protocol parameters to get different formats:
+     * - formatType options: "standard", "http", "socks5", "socks5h"
+     * - protocol options: "http" or "socks5"
+     * 
+     * @param serviceId ID of the service to export proxies from
+     * @return List of formatted proxy strings
+     */
+    public static List<String> exportServiceProxies(String serviceId) 
+            throws IOException, InterruptedException, URISyntaxException {
+        
+        // Build the URI with query parameters
+        String encodedServiceId = URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+        
+        URI uri = new URI(String.format("%s/user/proxy/list_by_search", BASE_URL))
+                .resolve("?service_id=" + encodedServiceId
+                        + "&list_format=standard"        // You can change this to "http", "socks5", or "socks5h"
+                        + "&list_protocol=http"          // You can change this to "socks5"
+                        + "&list_version=ipv4"
+                        + "&list_authentication=username_and_password");
+        
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() != 200) {
+            throw new IOException("API request failed with status code: " + response.statusCode());
+        }
+        
+        // Parse the response
+        ProxyListResponse listResponse = mapper.readValue(response.body(), ProxyListResponse.class);
+        
+        System.out.printf("Successfully retrieved %d formatted proxies from service %s%n", 
+                listResponse.data.size(), serviceId);
+        return listResponse.data;
+    }
+    
+    /**
+     * Export proxy list to a file
+     * @param proxyList List of proxy strings
+     * @param serviceId Service ID for file naming
+     * @return Filename of the exported file
+     */
+    public static String exportToFile(List<String> proxyList, String serviceId) 
+            throws IOException {
+        // Create a default filename with timestamp
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+        String timestamp = now.format(formatter);
+        String filename = String.format("service_%s_proxies_%s.txt", serviceId, timestamp);
+        
+        // Write the proxy list to a file
+        try (FileWriter writer = new FileWriter(filename)) {
+            for (String proxy : proxyList) {
+                writer.write(proxy + "\n");
+            }
+        }
+        
+        System.out.printf("Exported %d proxies to %s%n", proxyList.size(), filename);
+        return filename;
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Replace with your actual service ID
+            String serviceId = "API-1234-5678";
+            
+            // Get proxies
+            List<String> proxyList = exportServiceProxies(serviceId);
+            
+            // Export to file
+            if (!proxyList.isEmpty()) {
+                exportToFile(proxyList, serviceId);
+            }
+            
+            // Print sample output
+            if (!proxyList.isEmpty()) {
+                System.out.println("\nSample output: " + proxyList.get(0));
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Understanding the List Formats
+
+When exporting proxies, you can choose from several different formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| `standard` | `123.456.78.90:8080` | Basic format with IP:port only |
+| `http` | `http://username:password@123.456.78.90:8080` | HTTP proxy URL format |
+| `socks5` | `socks5://username:password@123.456.78.90:1080` | SOCKS5 proxy URL format |
+| `socks5h` | `socks5h://username:password@123.456.78.90:1080` | SOCKS5 with hostname resolution |
+
+## Authentication Types
+
+You can also specify the authentication method in your export:
+
+- `username_and_password`: Standard authentication with proxy user credentials
+- `ip_address`: IP-based authentication 
+- `proxy_specific`: Proxy-specific authentication
+
+## Use Cases
+
+- **Web scraping tools**: Export proxy lists for tools like Scrapy, Selenium, or Puppeteer
+- **Browser extensions**: Generate proxy configurations for proxy-switching extensions
+- **Third-party integration**: Create formatted proxy lists for third-party applications
+- **Team sharing**: Export proxy lists to share with team members
