@@ -1,0 +1,571 @@
+---
+title: "Retrieving all your proxies"
+description: "Learn how to retrieve and paginate through all your proxies and add them to a list."
+icon: "server"
+---
+
+This example demonstrates how to retrieve all your proxies using pagination, storing the results in a list.
+
+<CodeGroup>
+```python Python
+import requests
+import math
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+def get_all_proxies():
+    """Retrieve all proxies using pagination."""
+    proxies = []
+    page = 1
+    per_page = 100  # Maximum recommended page size
+    total_pages = 1  # Initial value, will be updated after first request
+    
+    # Make initial request to get first page and total count
+    response = requests.get(
+        f"{BASE_URL}/user/proxy/search",
+        params={"page": page, "per_page": per_page},
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        return []
+    
+    data = response.json()
+    
+    # Calculate total pages
+    total_count = data["total_count"]
+    total_pages = math.ceil(total_count / per_page)
+    
+    print(f"Found {total_count} proxies across {total_pages} pages")
+    
+    # Add first page results to our list
+    proxies.extend(data["data"])
+    
+    # Fetch remaining pages
+    for page in range(2, total_pages + 1):
+        print(f"Fetching page {page} of {total_pages}")
+        response = requests.get(
+            f"{BASE_URL}/user/proxy/search",
+            params={"page": page, "per_page": per_page},
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            page_data = response.json()
+            proxies.extend(page_data["data"])
+        else:
+            print(f"Error fetching page {page}: {response.status_code}")
+    
+    print(f"Successfully retrieved {len(proxies)} proxies")
+    return proxies
+
+# Example usage
+if __name__ == "__main__":
+    all_proxies = get_all_proxies()
+    
+    # Print the first proxy as an example
+    if all_proxies:
+        print("\nSample proxy:")
+        print(f"  ID: {all_proxies[0]['proxy_id']}")
+        print(f"  IP: {all_proxies[0]['proxy_ip_address']}")
+        print(f"  Type: {all_proxies[0]['proxy_type']}")
+        print(f"  Country: {all_proxies[0]['country_id']}")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Retrieve all proxies using pagination
+ * @returns {Promise<Array>} Array of proxy objects
+ */
+async function getAllProxies() {
+  const proxies = [];
+  const perPage = 100; // Maximum recommended page size
+  let page = 1;
+  
+  // Make initial request to get first page and total count
+  const url = new URL(`${BASE_URL}/user/proxy/search`);
+  url.searchParams.append('page', page);
+  url.searchParams.append('per_page', perPage);
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Calculate total pages
+    const totalCount = data.total_count;
+    const totalPages = Math.ceil(totalCount / perPage);
+    
+    console.log(`Found ${totalCount} proxies across ${totalPages} pages`);
+    
+    // Add first page results to our array
+    proxies.push(...data.data);
+    
+    // Fetch remaining pages
+    const remainingRequests = [];
+    for (let pageNum = 2; pageNum <= totalPages; pageNum++) {
+      console.log(`Fetching page ${pageNum} of ${totalPages}`);
+      
+      const pageUrl = new URL(`${BASE_URL}/user/proxy/search`);
+      pageUrl.searchParams.append('page', pageNum);
+      pageUrl.searchParams.append('per_page', perPage);
+      
+      const pageRequest = fetch(pageUrl, {
+        headers: {
+          'X-API-Public-Key': API_PUBLIC_KEY,
+          'X-API-Private-Key': API_PRIVATE_KEY
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error fetching page ${pageNum}: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(pageData => {
+        proxies.push(...pageData.data);
+      });
+      
+      remainingRequests.push(pageRequest);
+    }
+    
+    // Wait for all requests to complete
+    await Promise.all(remainingRequests);
+    
+    console.log(`Successfully retrieved ${proxies.length} proxies`);
+    return proxies;
+    
+  } catch (error) {
+    console.error('Error retrieving proxies:', error);
+    return [];
+  }
+}
+
+// Example usage
+getAllProxies().then(proxies => {
+  if (proxies.length > 0) {
+    console.log('\nSample proxy:');
+    console.log(`  ID: ${proxies[0].proxy_id}`);
+    console.log(`  IP: ${proxies[0].proxy_ip_address}`);
+    console.log(`  Type: ${proxies[0].proxy_type}`);
+    console.log(`  Country: ${proxies[0].country_id}`);
+  }
+});
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Retrieve all proxies using pagination
+ * @return array Array of proxy objects
+ */
+function getAllProxies($apiPublicKey, $apiPrivateKey, $baseUrl) {
+    $proxies = [];
+    $page = 1;
+    $perPage = 100; // Maximum recommended page size
+    
+    // Headers for authentication
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey
+    ];
+    
+    // Make initial request to get first page and total count
+    $ch = curl_init($baseUrl . '/user/proxy/search?page=' . $page . '&per_page=' . $perPage);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        echo "Error: " . $httpCode . "\n";
+        return [];
+    }
+    
+    $data = json_decode($response, true);
+    
+    // Calculate total pages
+    $totalCount = $data['total_count'];
+    $totalPages = ceil($totalCount / $perPage);
+    
+    echo "Found {$totalCount} proxies across {$totalPages} pages\n";
+    
+    // Add first page results to our array
+    $proxies = array_merge($proxies, $data['data']);
+    
+    // Fetch remaining pages
+    for ($pageNum = 2; $pageNum <= $totalPages; $pageNum++) {
+        echo "Fetching page {$pageNum} of {$totalPages}\n";
+        
+        $ch = curl_init($baseUrl . '/user/proxy/search?page=' . $pageNum . '&per_page=' . $perPage);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200) {
+            $pageData = json_decode($response, true);
+            $proxies = array_merge($proxies, $pageData['data']);
+        } else {
+            echo "Error fetching page {$pageNum}: {$httpCode}\n";
+        }
+    }
+    
+    echo "Successfully retrieved " . count($proxies) . " proxies\n";
+    return $proxies;
+}
+
+// Example usage
+$allProxies = getAllProxies($apiPublicKey, $apiPrivateKey, $baseUrl);
+
+// Print the first proxy as an example
+if (!empty($allProxies)) {
+    echo "\nSample proxy:\n";
+    echo "  ID: " . $allProxies[0]['proxy_id'] . "\n";
+    echo "  IP: " . $allProxies[0]['proxy_ip_address'] . "\n";
+    echo "  Type: " . $allProxies[0]['proxy_type'] . "\n";
+    echo "  Country: " . $allProxies[0]['country_id'] . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"math"
+	"net/http"
+	"sync"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// SearchResponse holds the structure of the API search response
+type SearchResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+// GetAllProxies retrieves all proxies using pagination
+func GetAllProxies() ([]map[string]interface{}, error) {
+	proxies := []map[string]interface{}{}
+	page := 1
+	perPage := 100 // Maximum recommended page size
+	
+	// Create a new HTTP client
+	client := &http.Client{}
+	
+	// Make initial request to get first page and total count
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/user/proxy/search?page=%d&per_page=%d", baseURL, page, perPage), nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add authentication headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	
+	// Execute the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("error: %d", resp.StatusCode)
+	}
+	
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var firstPageResponse SearchResponse
+	err = json.Unmarshal(body, &firstPageResponse)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Calculate total pages
+	totalCount := firstPageResponse.TotalCount
+	totalPages := int(math.Ceil(float64(totalCount) / float64(perPage)))
+	
+	fmt.Printf("Found %d proxies across %d pages\n", totalCount, totalPages)
+	
+	// Add first page results to our slice
+	proxies = append(proxies, firstPageResponse.Data...)
+	
+	// Use a wait group to fetch remaining pages concurrently
+	var wg sync.WaitGroup
+	var mu sync.Mutex // For thread-safe appending to proxies slice
+	
+	// Create a channel for errors
+	errChan := make(chan error, totalPages-1)
+	
+	// Fetch remaining pages
+	for pageNum := 2; pageNum <= totalPages; pageNum++ {
+		wg.Add(1)
+		
+		go func(pageNum int) {
+			defer wg.Done()
+			
+			fmt.Printf("Fetching page %d of %d\n", pageNum, totalPages)
+			
+			// Create a new request for this page
+			pageReq, err := http.NewRequest("GET", fmt.Sprintf("%s/user/proxy/search?page=%d&per_page=%d", baseURL, pageNum, perPage), nil)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			
+			// Add authentication headers
+			pageReq.Header.Add("X-API-Public-Key", apiPublicKey)
+			pageReq.Header.Add("X-API-Private-Key", apiPrivateKey)
+			
+			// Execute the request
+			pageResp, err := client.Do(pageReq)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			defer pageResp.Body.Close()
+			
+			if pageResp.StatusCode != 200 {
+				errChan <- fmt.Errorf("error fetching page %d: %d", pageNum, pageResp.StatusCode)
+				return
+			}
+			
+			// Read and parse the response
+			pageBody, err := ioutil.ReadAll(pageResp.Body)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			
+			var pageResponse SearchResponse
+			err = json.Unmarshal(pageBody, &pageResponse)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			
+			// Safely append the results to our slice
+			mu.Lock()
+			proxies = append(proxies, pageResponse.Data...)
+			mu.Unlock()
+		}(pageNum)
+	}
+	
+	// Wait for all goroutines to complete
+	wg.Wait()
+	close(errChan)
+	
+	// Check if there were any errors
+	for err := range errChan {
+		if err != nil {
+			return proxies, err // Return what we have along with the error
+		}
+	}
+	
+	fmt.Printf("Successfully retrieved %d proxies\n", len(proxies))
+	return proxies, nil
+}
+
+func main() {
+	allProxies, err := GetAllProxies()
+	if err != nil {
+		fmt.Printf("Error retrieving proxies: %v\n", err)
+		return
+	}
+	
+	// Print the first proxy as an example
+	if len(allProxies) > 0 {
+		proxy := allProxies[0]
+		fmt.Println("\nSample proxy:")
+		fmt.Printf("  ID: %v\n", proxy["proxy_id"])
+		fmt.Printf("  IP: %v\n", proxy["proxy_ip_address"])
+		fmt.Printf("  Type: %v\n", proxy["proxy_type"])
+		fmt.Printf("  Country: %v\n", proxy["country_id"])
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class RetrieveAllProxies {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // POJO for API response
+    static class SearchResponse {
+        public List<Map<String, Object>> data;
+        
+        @JsonProperty("item_count")
+        public int itemCount;
+        
+        public String message;
+        
+        public int page;
+        
+        @JsonProperty("per_page")
+        public int perPage;
+        
+        @JsonProperty("total_count")
+        public int totalCount;
+    }
+    
+    /**
+     * Retrieve all proxies using pagination
+     * @return List of proxy objects
+     */
+    public static List<Map<String, Object>> getAllProxies() throws IOException, InterruptedException {
+        List<Map<String, Object>> proxies = new ArrayList<>();
+        int perPage = 100; // Maximum recommended page size
+        int page = 1;
+        
+        // Make initial request to get first page and total count
+        HttpRequest firstRequest = HttpRequest.newBuilder()
+                .uri(URI.create(String.format("%s/user/proxy/search?page=%d&per_page=%d", BASE_URL, page, perPage)))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        HttpResponse<String> firstResponse = client.send(firstRequest, HttpResponse.BodyHandlers.ofString());
+        
+        if (firstResponse.statusCode() != 200) {
+            System.out.println("Error: " + firstResponse.statusCode());
+            return proxies;
+        }
+        
+        SearchResponse firstPageData = mapper.readValue(firstResponse.body(), SearchResponse.class);
+        
+        // Calculate total pages
+        int totalCount = firstPageData.totalCount;
+        int totalPages = (int) Math.ceil((double) totalCount / perPage);
+        
+        System.out.printf("Found %d proxies across %d pages%n", totalCount, totalPages);
+        
+        // Add first page results to our list
+        proxies.addAll(firstPageData.data);
+        
+        // Create a list of futures for all remaining pages
+        List<CompletableFuture<HttpResponse<String>>> futures = IntStream.range(2, totalPages + 1)
+                .mapToObj(pageNum -> {
+                    System.out.printf("Fetching page %d of %d%n", pageNum, totalPages);
+                    
+                    HttpRequest pageRequest = HttpRequest.newBuilder()
+                            .uri(URI.create(String.format("%s/user/proxy/search?page=%d&per_page=%d", BASE_URL, pageNum, perPage)))
+                            .header("X-API-Public-Key", API_PUBLIC_KEY)
+                            .header("X-API-Private-Key", API_PRIVATE_KEY)
+                            .GET()
+                            .build();
+                            
+                    return client.sendAsync(pageRequest, HttpResponse.BodyHandlers.ofString());
+                })
+                .collect(Collectors.toList());
+        
+        // Process all futures as they complete
+        for (CompletableFuture<HttpResponse<String>> future : futures) {
+            HttpResponse<String> response = future.join();
+            
+            if (response.statusCode() == 200) {
+                SearchResponse pageData = mapper.readValue(response.body(), SearchResponse.class);
+                proxies.addAll(pageData.data);
+            } else {
+                System.out.println("Error fetching page: " + response.statusCode());
+            }
+        }
+        
+        System.out.printf("Successfully retrieved %d proxies%n", proxies.size());
+        return proxies;
+    }
+
+    public static void main(String[] args) {
+        try {
+            List<Map<String, Object>> allProxies = getAllProxies();
+            
+            // Print the first proxy as an example
+            if (!allProxies.isEmpty()) {
+                Map<String, Object> proxy = allProxies.get(0);
+                System.out.println("\nSample proxy:");
+                System.out.println("  ID: " + proxy.get("proxy_id"));
+                System.out.println("  IP: " + proxy.get("proxy_ip_address"));
+                System.out.println("  Type: " + proxy.get("proxy_type"));
+                System.out.println("  Country: " + proxy.get("country_id"));
+            }
+        } catch (Exception e) {
+            System.out.println("Error retrieving proxies: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>

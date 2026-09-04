@@ -1,0 +1,72 @@
+---
+title: 'Listing and Exporting Proxies'
+description: 'How to view, filter, and export your static proxies'
+---
+
+If you have active Datacenter Proxies or Static Residential ISP Proxies services, you can view all your assigned proxies through the Static List page. This page provides comprehensive information about each proxy, including:
+
+- Proxy ID
+- Proxy Type
+- IP Address
+- Carrier
+- Location
+- Proxy Users with access
+
+## Static List Page
+
+The Static List page offers a centralized view of all your static proxies with powerful filtering and export capabilities.
+
+<img src="/images/general/exporting.png" alt="Byteful Static List Export Page" />
+
+## Filtering Proxies
+
+You can easily search for specific proxies using various filters to quickly locate the proxies you need:
+
+- Filter by proxy type (Datacenter, ISP)
+- Filter by location (country, region, city)
+- Filter by carrier/ASN
+- Search by IP address
+- Filter by proxy user access
+
+## Exporting Proxies
+
+The Static List page allows you to export your proxies to a text file in different formats to match your specific use case or software requirements.
+
+### Export Options
+
+When exporting your proxies, you can choose from several options:
+
+1. **Protocol**:
+   - HTTP
+   - SOCKS5
+
+2. **List Format**:
+   - Standard
+   - HTTP
+   - SOCKS5
+
+3. **Authentication Type**:
+   - Proxy User authentication
+   - IP-based authentication
+   - Proxy-specific authentication
+
+### Proxy Format Examples
+
+| Format | Structure | Example |
+|--------|-----------|---------|
+| Standard | `{ip_address}:{port}:{username}:{password}` | 42.34.59.198:8000:stevejobs:saM2iBP2A |
+| HTTP | `http://{username}:{password}@{ip_address}:{port}` | http://stevejobs:saM2iBP2A@42.34.59.198:8000 |
+| SOCKS5 | `socks5://{username}:{password}@{ip_address}:{port}` | socks5://stevejobs:saM2iBP2A@42.34.59.198:8000 |
+
+The standard format (`IP:PORT:USERNAME:PASSWORD`) is widely supported across various proxy tools and software, making it the most versatile export option. However, HTTP and SOCKS5 formatted URLs may be more convenient for specific applications.
+
+## Authentication Options
+
+When exporting your proxies, you can choose different authentication methods based on your needs. To learn more about available authentication options, please refer to our [Proxy Authentication Types](/general/proxy-authentication-types) guide.
+
+## Best Practices
+
+- Regularly export updated proxy lists if your proxies get rotated or replaced
+- Use meaningful filenames when exporting to keep track of different proxy groups
+- Consider using IP authentication for server-based applications
+- For applications requiring high security, use proxy user authentication with strict security enabled

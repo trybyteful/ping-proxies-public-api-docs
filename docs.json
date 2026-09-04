@@ -1,0 +1,463 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Byteful Documentation",
+  "colors": {
+    "primary": "#5547eb",
+    "light": "#a192ec",
+    "dark": "#5547eb"
+  },
+  "favicon": "favicon.png",
+  "styling": {
+    "css": ["/style.css"]
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "icon": "rocket",
+            "pages": [
+              "introduction",
+              "general/account-registration",
+              "general/making-your-first-purchase",
+              "need-help"
+            ]
+          },
+          {
+            "group": "Documentation",
+            "icon": "book",
+            "pages": [
+              {
+                "icon": "book-open",
+                "group": "Proxy Basics",
+                "pages": [
+                  "general/what-is-a-proxy",
+                  "general/supported-protocols"
+                ]
+              },
+              {
+                "icon": "server",
+                "group": "Static Proxies",
+                "pages": [
+                  "general/static-datacenter-proxies",
+                  "general/static-residential-isp-proxies",
+                  "general/listing-and-exporting-proxies"
+                ]
+              },
+              {
+                "icon": "house",
+                "group": "Residential Proxies",
+                "pages": [
+                  "general/explaining-residential-proxies",
+                  "general/generating-residential-proxies",
+                  "general/using-smartpath",
+                  "general/sticky-vs-rotating-residential-proxies",
+                  "general/geolocation-targeting",
+                  "general/isp-asn-targeting"
+                ]
+              },
+              {
+                "icon": "mobile",
+                "group": "Mobile Proxies",
+                "pages": [
+                  "general/explaining-mobile-proxies",
+                  "general/generating-mobile-proxies",
+                  "general/using-smartpath-mobile",
+                  "general/sticky-vs-rotating-mobile-proxies",
+                  "general/geolocation-targeting-mobile",
+                  "general/isp-asn-targeting-mobile"
+                ]
+              },
+              {
+                "icon": "lock",
+                "group": "Proxy Authentication",
+                "pages": [
+                  "general/proxy-authentication-types",
+                  "general/creating-a-proxy-user",
+                  "general/editing-a-proxy-user"
+                ]
+              },
+              {
+                "icon": "gear",
+                "group": "Service Management",
+                "pages": [
+                  "general/resizing-your-service",
+                  "general/changing-payment-cycle",
+                  "general/service-cancellation",
+                  "general/edit-payment-method"
+                ]
+              },
+              {
+                "icon": "chart-line",
+                "group": "Analytics and Debugging",
+                "pages": [
+                  "general/observability-overview",
+                  "general/live-network-activity",
+                  "general/debugging-and-error-codes"
+                ]
+              },
+              {
+                "icon": "credit-card",
+                "group": "Billing Management",
+                "pages": [
+                  "general/billing-address",
+                  "general/invoices",
+                  "general/credit-and-payment-transactions",
+                  "general/store-credit"
+                ]
+              },
+              {
+                "icon": "user",
+                "group": "Account Management",
+                "pages": [
+                  "general/two-factor-authentication",
+                  "general/changing-your-email-address",
+                  "general/changing-your-password",
+                  "general/forgot-password"
+                ]
+              },
+              {
+                "icon": "puzzle",
+                "group": "Integrations",
+                "pages": [
+                  "general/integration/browser-integrations",
+                  "general/integration/android-iphone",
+                  "general/integration/safari",
+                  "general/integration/duckduckgo",
+                  "general/integration/microsoft-edge",
+                  "general/integration/foxyproxy",
+                  "general/integration/shadowrocket",
+                  "general/integration/proxifier",
+                  "general/integration/curl",
+                  "general/integration/proxy-switchyomega",
+                  "general/integration/clonbrowser",
+                  "general/integration/dicloak",
+                  "general/integration/gologin",
+                  "general/integration/hayha",
+                  "general/integration/ixbrowser",
+                  "general/integration/lauth",
+                  "general/integration/mulogin",
+                  "general/integration/multilogin",
+                  "general/integration/nstbrowser",
+                  "general/integration/octobrowser",
+                  "general/integration/sessionbox",
+                  "general/integration/undetectable-browser",
+                  "general/integration/vmlogin"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Trust & Safety",
+            "icon": "lock",
+            "pages": [
+              "general/acceptable-usage-policy",
+              "general/abuse-reporting-policy",
+              "general/ethical-sourcing",
+              "general/kyc-policy",
+              "general/restricted-domains"
+            ]
+          },
+          {
+            "group": "Policies",
+            "icon": "pen",
+            "pages": [
+              "general/anti-abuse-policy",
+              "general/refund-policy",
+              "general/static-proxy-replacements",
+              "general/sub-processors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Introduction",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "api-introduction"
+            ]
+          },
+          {
+            "group": "API Basics",
+            "pages": [
+              "api-basics/authentication",
+              "api-basics/structure",
+              "api-basics/error-handling",
+              "api-basics/rate-limiting"
+            ]
+          },
+          {
+            "group": "Core API Features",
+            "pages": [
+              "api-core-features/pagination",
+              "api-core-features/sorting",
+              "api-core-features/search-operators",
+              "api-core-features/metadata"
+            ]
+          },
+          {
+            "group": "Core Objects",
+            "pages": [
+              "api-objects/customer",
+              "api-objects/proxy-user",
+              "api-objects/proxy-user-acl",
+              "api-objects/service",
+              "api-objects/service-adjustment",
+              "api-objects/proxy",
+              "api-objects/residential-ledger",
+              "api-objects/mobile-ledger",
+              "api-objects/log-summary",
+              "api-objects/log",
+              "api-objects/product",
+              "api-objects/asn",
+              "api-objects/continent",
+              "api-objects/country",
+              "api-objects/subdivision",
+              "api-objects/city",
+              "api-objects/proxy-tester"
+            ]
+          },
+          {
+            "group": "Explainers",
+            "pages": [
+              "api-explainers/proxy-types",
+              "api-explainers/residential-mobile-data",
+              "api-explainers/analytics",
+              "api-explainers/billing",
+              "api-explainers/common-object-relationships",
+              "api-explainers/proxy-user-access-control",
+              "api-explainers/service-adjustments",
+              "api-explainers/proxy-tester",
+              "api-explainers/api-purchasing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Examples",
+        "groups": [
+          {
+            "group": "Practical Examples",
+            "pages": [
+              "examples-index"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Customer",
+            "pages": [
+              "api-reference/customer/retrieve-current-customer"
+            ]
+          },
+          {
+            "group": "Proxy",
+            "pages": [
+              "api-reference/proxy/retrieve-proxy",
+              "api-reference/proxy/search-proxies",
+              "api-reference/proxy/retrieve-proxy-list-by-id",
+              "api-reference/proxy/retrieve-proxy-list-by-search",
+              "api-reference/proxy/retrieve-proxy-list-options"
+            ]
+          },
+          {
+            "group": "Proxy User",
+            "pages": [
+              "api-reference/proxy-user/create-proxy-user",
+              "api-reference/proxy-user/retrieve-proxy-user",
+              "api-reference/proxy-user/search-proxy-users",
+              "api-reference/proxy-user/edit-proxy-user",
+              "api-reference/proxy-user/delete-proxy-user-record"
+            ]
+          },
+          {
+            "group": "Proxy User ACL",
+            "pages": [
+              "api-reference/proxy-user-acl/create-proxy-user-acl",
+              "api-reference/proxy-user-acl/retrieve-proxy-user-acl",
+              "api-reference/proxy-user-acl/search-proxy-user-acls",
+              "api-reference/proxy-user-acl/delete-proxy-user-acl"
+            ]
+          },
+          {
+            "group": "Residential",
+            "pages": [
+              "api-reference/residential/create-residential-list",
+              "api-reference/residential/retrieve-residential-service-summary"
+            ]
+          },
+          {
+            "group": "Residential Availability",
+            "pages": [
+              "api-reference/residential-availability/search-residential-availability",
+              "api-reference/residential-availability/count-residential-availability"
+            ]
+          },
+          {
+            "group": "Residential Ledger",
+            "pages": [
+              "api-reference/residential-ledger/retrieve-residential-ledger",
+              "api-reference/residential-ledger/search-residential-ledger"
+            ]
+          },
+          {
+            "group": "Mobile",
+            "pages": [
+              "api-reference/mobile/create-mobile-list",
+              "api-reference/mobile/retrieve-mobile-service-summary"
+            ]
+          },
+          {
+            "group": "Mobile Availability",
+            "pages": [
+              "api-reference/mobile-availability/search-mobile-availability",
+              "api-reference/mobile-availability/count-mobile-availability"
+            ]
+          },
+          {
+            "group": "Mobile Ledger",
+            "pages": [
+              "api-reference/mobile-ledger/retrieve-mobile-ledger",
+              "api-reference/mobile-ledger/search-mobile-ledger"
+            ]
+          },
+          {
+            "group": "Service",
+            "pages": [
+              "api-reference/service/retrieve-service",
+              "api-reference/service/search-services",
+              "api-reference/service/edit-service",
+              "api-reference/service/cancel-service"
+            ]
+          },
+          {
+            "group": "Service Adjustment",
+            "pages": [
+              "api-reference/service-adjustment/retrieve-service-adjustment",
+              "api-reference/service-adjustment/search-service-adjustments"
+            ]
+          },
+          {
+            "group": "Checkout",
+            "pages": [
+              "api-reference/checkout/retrieve-simplified-product-checkout-catalog",
+              "api-reference/checkout/generate-checkout-quote",
+              "api-reference/checkout/create-checkout"
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "api-reference/proxy-analytics/graph-proxy-analytics",
+              "api-reference/proxy-analytics/breakdown-proxy-analytics"
+            ]
+          },
+          {
+            "group": "Product",
+            "pages": [
+              "api-reference/product/search-product"
+            ]
+          },
+          {
+            "group": "ASN",
+            "pages": [
+              "api-reference/asn/retrieve-asn",
+              "api-reference/asn/search-asn"
+            ]
+          },
+          {
+            "group": "Continent",
+            "pages": [
+              "api-reference/continent/retrieve-continent",
+              "api-reference/continent/search-continent"
+            ]
+          },
+          {
+            "group": "Country",
+            "pages": [
+              "api-reference/country/retrieve-country",
+              "api-reference/country/search-country"
+            ]
+          },
+          {
+            "group": "Subdivision",
+            "pages": [
+              "api-reference/subdivision/retrieve-subdivision",
+              "api-reference/subdivision/search-subdivision"
+            ]
+          },
+          {
+            "group": "City",
+            "pages": [
+              "api-reference/city/retrieve-city",
+              "api-reference/city/search-city"
+            ]
+          },
+          {
+            "group": "Zip Code",
+            "pages": [
+              "api-reference/zip-code/retrieve-zip-code",
+              "api-reference/zip-code/search-zip-code"
+            ]
+          },
+          {
+            "group": "Proxy Tester",
+            "pages": [
+              "api-reference/proxy-tester/create-proxy-test",
+              "api-reference/proxy-tester/search-proxy-test-servers"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Changelog",
+        "groups": [
+          {
+            "group": "Public API Changelog",
+            "pages": [
+              "api-changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Product Updates",
+        "groups": [
+          {
+            "group": "Product Updates",
+            "pages": [
+              "product-updates"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "openapi": "https://api.byteful.com/1.0/public/user/documentation/openapi.json",
+  "logo": {
+    "light": "https://ping-proxies-strapi.ams3.digitaloceanspaces.com/public/uploads/ping_logo_b83f7f9c6b.webp",
+    "dark": "https://ping-proxies-strapi.ams3.cdn.digitaloceanspaces.com/public/uploads/byteful-white-logo.png"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "url": "mailto:support@byteful.com",
+        "href": "mailto:support@byteful.com"
+      },
+      {
+        "label": "Developer Help",
+        "url": "mailto:developers@byteful.com",
+        "href": "mailto:developers@byteful.com"
+      }
+    ]
+  }
+}
