@@ -1,0 +1,116 @@
+---
+title: 'Residential Data'
+description: 'Understanding and managing residential data allocation in the Byteful API'
+---
+
+Unlike datacenter and ISP proxies that operate on a per-proxy model, residential proxies use a data-based allocation system. This guide explains how residential data is managed in the Byteful API.
+
+## Data Fundamentals
+
+Residential data in Byteful works as follows:
+
+- **Account-Wide Pool**: Data is added to your customer account as a shared resource
+- **No Expiration**: Once data is added to your account, it never expires until it is consumed
+- **Proxy User Allocation**: Data can be allocated to different proxy users with specific limits
+- **Usage Tracking**: All data usage is tracked and can be monitored via the API
+
+## Managing Data via API
+
+### Checking Data Usage
+
+To check your current residential data status:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/residential/summary' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "residential_bytes": 10737418240,     // Total allocated data (10 GB)
+    "residential_bytes_used": 3221225472, // Used data (3 GB)
+    "residential_bytes_left": 7516192768, // Remaining data (7 GB)
+    "residential_requests": 145022,       // Total number of requests
+    "proxy_user_ids": ["default_user", "stevejobs"] // Any other proxy users which have access to the data
+  },
+  "message": "Residential summary successfully generated."
+}
+```
+
+### Setting Proxy User Data Limits
+
+While the total data is purchased through the dashboard, you can control how much data each proxy user can consume via the API:
+
+```bash
+curl --request PATCH \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/edit/stevejobs' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_residential_bytes_limit": 2147483648
+  }'
+```
+
+This sets a 2 GB limit for the "stevejobs" proxy user, preventing them from using more than that amount from the account's total residential data.
+
+### Creating Proxy Users with Data Limits
+
+When creating a new proxy user, you can set their data limit immediately:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_id": "research_team",
+    "proxy_user_password": "secure_password",
+    "proxy_user_residential_bytes_limit": 3221225472
+  }'
+```
+
+This creates a new proxy user with a 3 GB data limit. You can use `null` for unlimited data.
+
+### Viewing Individual Proxy User Data Usage
+
+To check a specific proxy user's data usage:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/retrieve/research_team' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Response includes data fields:
+
+```json
+{
+  "data": {
+    "proxy_user_id": "research_team",
+    "proxy_user_residential_bytes_limit": 3221225472,
+    "proxy_user_residential_bytes_used": 1073741824,
+    "residential_bytes_left": 2147483648,
+    // ... other proxy user fields
+  },
+  "message": "Proxy User successfully retrieved."
+}
+```
+
+## Topping Up Data
+
+While data limits can be managed via the API, purchasing additional data must be done through the dashboard:
+
+1. Log into your Byteful dashboard
+2. Click "Add Data" next to your residential data total on the summary page
+4. Choose the amount of data to add
+5. Complete the purchase
+
+Once purchased, the additional data is immediately added to your account's pool and never expires.

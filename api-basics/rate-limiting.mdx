@@ -1,0 +1,37 @@
+---
+title: 'Rate Limiting'
+description: 'Understanding and working with API rate limits'
+---
+
+To ensure fair usage and system stability, the Byteful API implements rate limiting. This page explains our rate limits and how to work with them effectively.
+
+## Rate Limit Policy
+
+The Byteful API enforces a default rate limit of **10 requests per second** per customer. This applies to most endpoints, with some exceptions:
+
+- Some resource-intensive endpoints may have lower rate limits
+
+Rate limiting helps us:
+- Protect the API from excessive traffic
+- Ensure fair access for all users
+- Maintain reliable service performance
+
+## Rate Limit Exceeded Response
+
+If you exceed the rate limit, you'll receive a `429 Too Many Requests` response with a body like:
+
+```json
+{
+  "error": "Too Many Requests",
+  "message": "Rate limit exceeded. Please try again later.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+## Increase Your Rate Limit
+
+<Card title="Need Higher Limits?" icon="bolt">
+  We can customize rate limits on a per-customer basis with proper justification.
+  
+  Contact our development team at [developers@byteful.com](mailto:developers@byteful.com) to discuss your specific needs.
+</Card>

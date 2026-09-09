@@ -1,0 +1,89 @@
+---
+title: 'Supported Protocol Versions'
+description: 'Protocol version support information for Byteful services'
+---
+## Protocol by Service
+### Datacenter and ISP
+The tables in the sections below detail TLS and specific protocol version support across each of these product lines.
+
+| Protocol | Supported | HTTP to Proxy | HTTPS to Proxy | HTTPS to Target |
+|----------|-----------|--------------------|---------------|----------------|
+| SOCKS5   |   ✅      |         ✅         |      ❌       |       ✅       |
+| HTTP/1   |   ✅      |         ✅         |      ❌       |       ✅       |
+| HTTP/2   |   ✅      |         ✅         |      ❌       |       ✅       |
+| HTTP/3   |   ❌      |         ❌         |      ❌       |       ❌       |
+
+Our Datacenter and ISP proxies support SOCKS5, HTTP/1 and HTTP/2. We do not provide IP based TLS certificates so all communication with the proxy must be cleartext. This **does not** mean your traffic is unencrypted. You will still do TLS to the target as long as your target supports TLS.
+
+<Note>
+For HTTP/2, these product ranges only support HTTP/2 Prior Knowledge.
+</Note>
+
+### Residential
+<Note>
+For security reasons on our residential network, unencrypted HTTP connections are only supported to `ip-api.com`. For all other destinations you must use HTTPS (port 443). If you need HTTP access to additional targets, please contact support@byteful.com.
+</Note>
+
+
+| Protocol | Supported | HTTP to Proxy | HTTPS to Proxy |  HTTP to Target |
+|----------|-----------|--------------------|---------------|-----------------|
+| SOCKS5   |    ✅     |         ✅         |       ✅      |      ✅         |
+| HTTP/1   |    ✅     |         ✅         |       ✅      |      ✅         |
+| HTTP/2   |    ✅     |         ✅         |       ✅      |      ✅         |
+| HTTP/3   |    ✅     |         ❌         |       ✅      |      ✅         |
+
+Our Residential proxies support SOCKS5, HTTP/1, HTTP/2 and HTTP/3. We provide TLS certificates for our residential backconnects so all communication with the proxy can be encrypted - including SOCKS5 if you so desire. Unlike competitors we support HTTP upgrades via ALPN. Simply set your proxy string to use the "HTTPS" scheme and your client will do the rest of the work, upgrading you to the best protocol for the job under the hood.
+
+<Note>
+For HTTP/2, we support Prior Knowledge and ALPN upgrades. We do not support HTTP/1 upgrades to HTTP/2 for security reasons.
+</Note>
+
+### Mobile
+<Note>
+For security reasons on our mobile network, unencrypted HTTP connections are only supported to `ip-api.com`. For all other destinations you must use HTTPS (port 443). If you need HTTP access to additional targets, please contact support@byteful.com.
+</Note>
+
+
+| Protocol | Supported | HTTP to Proxy | HTTPS to Proxy |  HTTP to Target |
+|----------|-----------|--------------------|---------------|-----------------|
+| SOCKS5   |    ✅     |         ✅         |       ✅      |      ✅         |
+| HTTP/1   |    ✅     |         ✅         |       ✅      |      ✅         |
+| HTTP/2   |    ✅     |         ✅         |       ✅      |      ✅         |
+| HTTP/3   |    ✅     |         ❌         |       ✅      |      ✅         |
+
+Our Mobile proxies support SOCKS5, HTTP/1, HTTP/2 and HTTP/3. We provide TLS certificates for our mobile backconnects so all communication with the proxy can be encrypted - including SOCKS5 if you so desire. Unlike competitors we support HTTP upgrades via ALPN. Simply set your proxy string to use the "HTTPS" scheme and your client will do the rest of the work, upgrading you to the best protocol for the job under the hood.
+
+<Note>
+For HTTP/2, we support Prior Knowledge and ALPN upgrades. We do not support HTTP/1 upgrades to HTTP/2 for security reasons.
+</Note>
+
+## HTTP Method Support
+All of our HTTP capable products - regardless of version - support two types of usage.
+
+- Firstly, using the CONNECT method which establishes a TCP tunnel to your target. This is sometimes known as HTTPS proxying.
+- Secondly as a man in the middle (MITM) proxy, which reads your requests and forwards them  to your target. This is sometimes known as HTTP proxying.
+
+<Note>
+The MASUQE working group have defined two new HTTP methods "CONNECT-UDP" and "CONNECT-IP" for tunneling UDP and IP traffic respectively via a HTTP connection. These methods are valid for all HTTP versions. We are actively contributing to our open source libraries to support these methods.
+</Note>
+
+CONNECT tunnels should be used in the majority of cases but especially when connecting to a TLS capable target. Any TCP based protocol can be spoken over a CONNECT tunnel, you aren't  limited to HTTP traffic only. As mentioned above, we can't see any of your traffic when  using a CONNECT tunnel to a TLS capable endpoint.
+
+When acting as a MITM, your requests are forwarded with minimal changes (we strip proxy specific headers). MITM proxies can be used to send requests to both cleartext and TLS capable endpoints. When communicating with a TLS capable endpoint and using as a MITM proxy, we can see the contents of your requests. If you do not desire this, use a CONNECT tunnel.
+
+<Note>
+MITM proxy requests sent to TLS capable endpoints might be modified for compatibility with the target. If you send us HTTP/2 but the target only supports HTTP/1, we will adjust the protocol version.
+</Note>
+
+Typical proxy clients follow this simple rule: HTTPS requests go through a CONNECT tunnel, HTTP requests are sent MITM-style. We support other use-cases so that when writing your own clients, we can fit any use-case.
+
+
+<CardGroup cols={1}>
+  <Card
+    title = "Code Examples"
+    icon = "code"
+    href =  "/general/code-examples"
+  >
+	Learn how to establish HTTP/1.1, HTTP/2, HTTP3 and SOCKS5 proxy connections. See how you can tunnel all traffic types, including QUIC through Byteful services.
+  </Card>
+</CardGroup>

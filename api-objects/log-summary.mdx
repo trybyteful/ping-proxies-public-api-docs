@@ -1,0 +1,62 @@
+---
+title: 'Log Summary'
+description: 'Understanding the Log Summary object and its role in the Byteful API'
+---
+
+The Log Summary object represents aggregated usage data for proxies in the Byteful system. It provides a consolidated view of proxy usage patterns over time, offering insights into data consumption, request counts, and more, without the granularity of individual log entries.
+
+## Key Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `log_summary_id` | string | Unique identifier for the log summary |
+| `proxy_user_id` | string | ID of the proxy user whose activity is summarized |
+| `customer_id` | integer | ID of the customer account associated with the summary |
+| `log_summary_network` | string | Network type (`datacenter`, `isp`, `residential` or `mobile`) |
+| `log_summary_hostname` | string | Domain that was accessed through the proxy |
+| `log_summary_requests` | integer | Total number of requests during the period |
+| `log_summary_bytes` | integer | Total data usage in bytes |
+| `log_summary_period` | datetime | Time period the summary represents |
+| `log_summary_creation_datetime` | datetime | When the summary was created |
+| `log_summary_last_update_datetime` | datetime | When the summary was last updated |
+
+## Object Relationships
+
+The Log Summary object connects several other entities in the Byteful system:
+
+- **Customer**: Each log summary is associated with a specific customer account
+- **Proxy User**: Log summaries track usage for specific proxy users
+- **Logs**: Raw logs are aggregated into log summaries
+- **Residential Ledger**: Both log summaries and residential ledger track data usage, but serve different purposes (analytics vs. billing)
+- **Mobile Ledger**: Both log summaries and mobile ledger track data usage, but serve different purposes (analytics vs. billing)
+
+## Related Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /public/user/log_summary/retrieve/{log_summary_id}` | Retrieve a specific log summary |
+| `GET /public/user/log_summary/search` | Search log summaries with filters |
+| `GET /public/user/analytics/graph` | Generate visualizations from log summary data |
+
+## Data Retention and Analytics
+
+Log Summaries follow a tiered retention and aggregation policy:
+
+- **First 90 days**: Organized by `proxy_user_id`, `network`, and `hostname`
+- **After 90 days**: Further consolidated to just `proxy_user_id` and `network` level (hostname details are removed)
+- **Long-term storage**: Maintained indefinitely but with reduced granularity
+- **Analytics Integration**: The `/analytics/graph` endpoint processes data from both raw logs and log summaries, providing comprehensive analytics regardless of data age
+
+This provides an efficient way to analyze historical usage patterns without storing every individual request.
+
+## Usage Notes
+
+- Log Summaries are automatically generated daily for active proxy users
+- They provide a more efficient way to analyze usage trends compared to raw logs
+- The `log_summary_hostname` field is only available for summaries less than 90 days old
+- For residential/mobile proxies, the `log_summary_bytes` directly correlates with data consumption
+- Use the `/analytics/graph` endpoint for visualizing log summary data over time with flexible time intervals (minute, hour, day, month)
+- Log Summaries and Residential/Mobile Ledgers track related data but serve different purposes:
+  - Log Summaries focus on usage patterns and analytics across all proxy types
+  - Residential/Mobile Ledgers specifically tracks data changes for billing purposes
+  - While not directly linked, the data from both should reconcile in aggregate

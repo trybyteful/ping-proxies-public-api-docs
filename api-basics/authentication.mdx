@@ -1,0 +1,366 @@
+---
+title: 'Authentication'
+description: 'Authenticating with the Byteful API'
+---
+
+The Byteful API uses API keys for authentication. Each request must include both your public and private API keys in the request headers. This ensures that only authorized users can access the API.
+
+## API Keys
+
+You'll need to use two keys for authentication:
+
+- **Public API Key**: Identifies your account
+- **Private API Key**: Verifies your identity (keep this secure)
+
+These keys must be included in the headers of every request to the API.
+
+## Authentication Headers
+
+Include the following headers in all your API requests:
+
+| Header | Description |
+|--------|-------------|
+| `X-API-Public-Key` | Your public API key |
+| `X-API-Private-Key` | Your private API key |
+
+## Security Best Practices
+
+- **Never share your private key**: Keep your private API key confidential
+- **Use environment variables**: Store keys in environment variables rather than hardcoding them
+- **Rotate keys periodically**: Change your API keys regularly as a security best practice
+
+## Basic Authentication Example
+
+This example shows how to authenticate and retrieve customer information using the `/customer/retrieve` endpoint:
+
+<CodeGroup>
+```bash cURL
+# Basic authentication and customer information retrieval
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/customer/retrieve' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+```python Python
+import requests
+import json
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+# Retrieve customer information
+def get_customer_info():
+    url = f"{BASE_URL}/user/customer/retrieve"
+    response = requests.get(url, headers=headers)
+    
+    # Parse the response
+    data = response.json()
+    
+    # Check for errors
+    if response.status_code != 200:
+        error_message = data.get('message', 'Unknown error')
+        api_request_id = data.get('api_request_id', 'None')
+        error_code = data.get('code', 'None')
+        raise Exception(f"Error {error_code}: {error_message} (Request ID: {api_request_id})")
+        
+    return data
+
+# Example usage
+if __name__ == "__main__":
+    try:
+        customer_info = get_customer_info()
+        print("Authentication successful!")
+        print(f"Customer information: {json.dumps(customer_info, indent=2)}")
+    except Exception as e:
+        print(f"Authentication failed: {e}")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY
+};
+
+// Retrieve customer information
+async function getCustomerInfo() {
+  const url = `${BASE_URL}/user/customer/retrieve`;
+  
+  const response = await fetch(url, { headers });
+  const data = await response.json();
+  
+  // Check for errors
+  if (!response.ok) {
+    const errorMessage = data.message || 'Unknown error';
+    const apiRequestId = data.api_request_id || 'None';
+    const errorCode = data.code || 'None';
+    throw new Error(`Error ${errorCode}: ${errorMessage} (Request ID: ${apiRequestId})`);
+  }
+  
+  return data;
+}
+
+// Example usage
+async function main() {
+  try {
+    const customerInfo = await getCustomerInfo();
+    console.log('Authentication successful!');
+    console.log('Customer information:', JSON.stringify(customerInfo, null, 2));
+  } catch (error) {
+    console.error(`Authentication failed: ${error.message}`);
+  }
+}
+
+main();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey
+];
+
+// Retrieve customer information
+function getCustomerInfo($baseUrl, $headers) {
+    $url = $baseUrl . '/user/customer/retrieve';
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    // Parse the response
+    $data = json_decode($response, true);
+    
+    // Check for errors
+    if ($httpCode !== 200) {
+        $errorMessage = isset($data['message']) ? $data['message'] : 'Unknown error';
+        $apiRequestId = isset($data['api_request_id']) ? $data['api_request_id'] : 'None';
+        $errorCode = isset($data['code']) ? $data['code'] : 'None';
+        throw new Exception("Error {$errorCode}: {$errorMessage} (Request ID: {$apiRequestId})");
+    }
+    
+    return $data;
+}
+
+// Example usage
+try {
+    $customerInfo = getCustomerInfo($baseUrl, $headers);
+    echo "Authentication successful!\n";
+    echo "Customer information: " . json_encode($customerInfo, JSON_PRETTY_PRINT) . "\n";
+} catch (Exception $e) {
+    echo "Authentication failed: " . $e->getMessage() . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// ApiError represents an error response from the API
+type ApiError struct {
+	Code         string `json:"code"`
+	Message      string `json:"message"`
+	ApiRequestID string `json:"api_request_id"`
+}
+
+// CustomerResponse represents the customer info API response
+type CustomerResponse struct {
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+// GetCustomerInfo retrieves authenticated customer information
+func GetCustomerInfo() (interface{}, error) {
+	url := baseURL + "/user/customer/retrieve"
+	
+	// Create a new request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add authentication headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for errors
+	if resp.StatusCode != 200 {
+		var apiError ApiError
+		if err := json.Unmarshal(body, &apiError); err != nil {
+			return nil, fmt.Errorf("API request failed with status code: %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("Error %s: %s (Request ID: %s)", 
+			apiError.Code, apiError.Message, apiError.ApiRequestID)
+	}
+
+	// Parse the response
+	var response CustomerResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func main() {
+	customerInfo, err := GetCustomerInfo()
+	if err != nil {
+		fmt.Printf("Authentication failed: %v\n", err)
+		return
+	}
+	
+	// Format the output as JSON
+	customerJSON, _ := json.MarshalIndent(customerInfo, "", "  ")
+	
+	fmt.Println("Authentication successful!")
+	fmt.Printf("Customer information: %s\n", string(customerJSON))
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class PingProxiesAuthentication {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // API Error class
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class ApiError {
+        public String code;
+        public String message;
+        
+        @JsonProperty("api_request_id")
+        public String apiRequestId;
+    }
+    
+    // Customer response class
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class CustomerResponse {
+        public String message;
+        public Object data;
+    }
+    
+    // Retrieve customer information
+    public static CustomerResponse getCustomerInfo() throws IOException, InterruptedException {
+        String url = BASE_URL + "/user/customer/retrieve";
+        
+        // Create the request with authentication headers
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Check for errors
+        if (response.statusCode() != 200) {
+            ApiError error = mapper.readValue(response.body(), ApiError.class);
+            throw new IOException(String.format("Error %s: %s (Request ID: %s)", 
+                error.code, error.message, error.apiRequestId));
+        }
+        
+        // Parse the response
+        return mapper.readValue(response.body(), CustomerResponse.class);
+    }
+
+    public static void main(String[] args) {
+        try {
+            CustomerResponse customerInfo = getCustomerInfo();
+            System.out.println("Authentication successful!");
+            System.out.println("Customer information: " + 
+                mapper.writerWithDefaultPrettyPrinter().writeValueAsString(customerInfo));
+        } catch (Exception e) {
+            System.out.println("Authentication failed: " + e.getMessage());
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Troubleshooting Authentication Issues
+
+If you encounter authentication errors, check the following:
+
+| Error | Possible Cause | Solution |
+|-------|---------------|----------|
+| 401 Unauthorized | Invalid API keys | Verify your API keys are correct and properly formatted |
+| No response | Network issues | Check your network connection and firewall settings |
+
+## API Key Management
+
+You can manage your API keys through the Byteful dashboard:
+
+1. Log in to your account
+2. Navigate to the API Keys section
+3. View your current keys or generate new ones

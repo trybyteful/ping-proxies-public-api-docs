@@ -1,0 +1,124 @@
+---
+title: API Introduction
+description: "Welcome to the Byteful API documentation"
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/api//hero-light.webp"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/api//hero-dark.webp"
+  alt="Hero Dark"
+/>
+
+## Welcome to the Byteful API
+
+The Byteful API enables you to programmatically manage your proxy infrastructure. Whether you're building a custom integration, automating workflows, or scaling your proxy usage, our RESTful API provides the tools you need.
+
+## Getting Started
+
+Follow these steps to start using the Byteful API:
+
+<CardGroup cols={2}>
+  <Card
+    title="Create an Account"
+    icon="user-plus"
+    href="https://dashboard.byteful.com/sign-up"
+  >
+    Sign up for a Byteful account to access our API services
+  </Card>
+  <Card
+    title="Generate API Keys"
+    icon="key"
+    href="https://dashboard.byteful.com/developer/api-key"
+  >
+    Create API keys in your dashboard to authenticate your API requests
+  </Card>
+</CardGroup>
+
+## Core Features
+
+Our API offers comprehensive functionality to manage all aspects of your proxy infrastructure:
+
+<CardGroup cols={2}>
+  <Card
+    title="Proxy Management"
+    icon="server"
+    href="/api-reference/proxy/search-proxies"
+  >
+    Search, retrieve, and manage your proxy inventory programmatically
+  </Card>
+  <Card
+    title="Authentication"
+    icon="shield-halved"
+    href="/api-reference/proxy-user/create-proxy-user"
+  >
+    Create and manage proxy users for secure access control
+  </Card>
+  <Card
+    title="Services & Billing"
+    icon="credit-card"
+    href="/api-reference/service/search-services"
+  >
+    Manage service subscriptions, view proxy usage, and handle billing
+  </Card>
+  <Card
+    title="Analytics & Logs"
+    icon="chart-line"
+    href="/api-reference/proxy-analytics/graph-proxy-analytics"
+  >
+    Access detailed analytics and logs for your proxy usage
+  </Card>
+</CardGroup>
+<Warning>
+  Services can only be purchased via the API using your account credit balance. You must top up your account with credit prior to using the API to make purchases.
+</Warning>
+## Examples and Use Cases
+
+Here are some common use cases for the Byteful API:
+
+```bash
+# Example: Retrieve all ISP proxies in the United States
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?proxy_type=isp&country_id=us' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+<CardGroup cols={3}>
+  <Card
+    title="Web Scraping"
+    icon="spider-web"
+  >
+    Create and rotate through proxies to collect data reliably
+  </Card>
+  <Card
+    title="Agentic Automation"
+    icon="robot"
+  >
+    Handle proxy infrastructure for your AI agents.
+  </Card>
+  <Card
+    title="SEO Monitoring"
+    icon="magnifying-glass-chart"
+  >
+    Monitor search rankings from various locations globally
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+Our team is ready to assist you with API integration and usage:
+
+<CardGroup cols={2}>
+  <Card
+    title="Contact Developer Support"
+    icon="headset"
+    href="mailto:developers@byteful.com"
+  >
+    Reach out to our support team for technical assistance
+  </Card>
+</CardGroup>
