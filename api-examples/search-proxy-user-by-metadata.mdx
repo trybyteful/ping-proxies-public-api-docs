@@ -1,0 +1,617 @@
+---
+title: "Search proxy users by metadata properties"
+description: "This guide demonstrates how to search for proxy users based on metadata values using both exact matching and range filtering with the Byteful API."
+icon: "search"
+---
+
+# Examples
+
+- Find all proxy users associated with a specific department
+- Find proxy users with a employee_id within a certain range
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+# Example 1: Search proxy users by exact metadata match (department = "Marketing")
+# This will find all proxy users that have their department field in metadata set to "Marketing"
+exact_match_url = f"{BASE_URL}/proxy_user/search"
+exact_match_params = {
+    "proxy_user_metadata.department": "Marketing"
+}
+
+# Make the API request
+exact_match_response = requests.get(exact_match_url, headers=headers, params=exact_match_params)
+
+# Check if the request was successful
+if exact_match_response.status_code == 200:
+    exact_match_data = exact_match_response.json()
+    print(f"Found {exact_match_data['total_count']} proxy users in Marketing department:")
+    
+    # Display the results
+    for proxy_user in exact_match_data['data']:
+        print(f"  - {proxy_user['proxy_user_id']}: {proxy_user.get('proxy_user_metadata', {})}")
+else:
+    print(f"Error in exact match search: {exact_match_response.status_code}")
+    print(exact_match_response.text)
+
+# Example 2: Search proxy users by metadata range (employee_id between 1000 and 5000)
+# This will find all proxy users that have a employee_id value between 1000 and 5000
+range_url = f"{BASE_URL}/proxy_user/search"
+range_params = {
+    "proxy_user_metadata.min_employee_id": 1000,
+    "proxy_user_metadata.max_employee_id": 5000
+}
+
+# Make the API request
+range_response = requests.get(range_url, headers=headers, params=range_params)
+
+# Check if the request was successful
+if range_response.status_code == 200:
+    range_data = range_response.json()
+    print(f"\nFound {range_data['total_count']} proxy users with employee_id between 1000 and 5000:")
+    
+    # Display the results
+    for proxy_user in range_data['data']:
+        print(f"  - {proxy_user['proxy_user_id']}: EmployeeId = {proxy_user.get('proxy_user_metadata', {}).get('employee_id', 'N/A')}")
+else:
+    print(f"Error in range search: {range_response.status_code}")
+    print(range_response.text)
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public/user';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY
+};
+
+// Example 1: Search proxy users by exact metadata match (department = "Marketing")
+// This will find all proxy users that have their department field in metadata set to "Marketing"
+const exactMatchSearch = async () => {
+  try {
+    // Create URL with query parameters
+    const url = new URL(`${BASE_URL}/proxy_user/search`);
+    url.searchParams.append('proxy_user_metadata.department', 'Marketing');
+    
+    // Make the API request
+    const response = await fetch(url, { headers });
+    
+    // Check if the request was successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Display the results
+    console.log(`Found ${data.total_count} proxy users in Marketing department:`);
+    data.data.forEach(proxyUser => {
+      console.log(`  - ${proxyUser.proxy_user_id}: ${JSON.stringify(proxyUser.proxy_user_metadata || {})}`);
+    });
+  } catch (error) {
+    console.error(`Error in exact match search: ${error.message}`);
+  }
+};
+
+// Example 2: Search proxy users by metadata range (employee_id between 1000 and 5000)
+// This will find all proxy users that have a employee_id value between 1000 and 5000
+const rangeSearch = async () => {
+  try {
+    // Create URL with query parameters
+    const url = new URL(`${BASE_URL}/proxy_user/search`);
+    url.searchParams.append('proxy_user_metadata.min_employee_id', '1000');
+    url.searchParams.append('proxy_user_metadata.max_employee_id', '5000');
+    
+    // Make the API request
+    const response = await fetch(url, { headers });
+    
+    // Check if the request was successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Display the results
+    console.log(`\nFound ${data.total_count} proxy users with employee_id between 1000 and 5000:`);
+    data.data.forEach(proxyUser => {
+      const employee_id = proxyUser.proxy_user_metadata?.employee_id || 'N/A';
+      console.log(`  - ${proxyUser.proxy_user_id}: EmployeeId = ${employee_id}`);
+    });
+  } catch (error) {
+    console.error(`Error in range search: ${error.message}`);
+  }
+};
+
+// Execute both searches
+(async () => {
+  await exactMatchSearch();
+  await rangeSearch();
+})();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public/user';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey
+];
+
+// Example 1: Search proxy users by exact metadata match (department = "Marketing")
+// This will find all proxy users that have their department field in metadata set to "Marketing"
+$exactMatchUrl = $baseUrl . '/proxy_user/search?proxy_user_metadata.department=Marketing';
+
+// Initialize cURL session
+$ch = curl_init($exactMatchUrl);
+
+// Set cURL options
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+// Execute the request
+$exactMatchResponse = curl_exec($ch);
+
+// Check for errors
+if (curl_errno($ch)) {
+    echo 'Error in exact match search: ' . curl_error($ch) . "\n";
+} else {
+    // Parse the JSON response
+    $exactMatchData = json_decode($exactMatchResponse, true);
+    
+    // Check if the request was successful
+    if (isset($exactMatchData['total_count'])) {
+        echo "Found {$exactMatchData['total_count']} proxy users in Marketing department:\n";
+        
+        // Display the results
+        foreach ($exactMatchData['data'] as $proxyUser) {
+            $metadata = isset($proxyUser['proxy_user_metadata']) ? json_encode($proxyUser['proxy_user_metadata']) : '{}';
+            echo "  - {$proxyUser['proxy_user_id']}: $metadata\n";
+        }
+    } else {
+        echo "Error in exact match search: " . json_encode($exactMatchData) . "\n";
+    }
+}
+
+// Example 2: Search proxy users by metadata range (employee_id between 1000 and 5000)
+// This will find all proxy users that have a employee_id value between 1000 and 5000
+$rangeUrl = $baseUrl . '/proxy_user/search?proxy_user_metadata.min_employee_id=1000&proxy_user_metadata.max_employee_id=5000';
+
+// Initialize cURL session (reusing the same handle)
+curl_setopt($ch, CURLOPT_URL, $rangeUrl);
+
+// Execute the request
+$rangeResponse = curl_exec($ch);
+
+// Check for errors
+if (curl_errno($ch)) {
+    echo 'Error in range search: ' . curl_error($ch) . "\n";
+} else {
+    // Parse the JSON response
+    $rangeData = json_decode($rangeResponse, true);
+    
+    // Check if the request was successful
+    if (isset($rangeData['total_count'])) {
+        echo "\nFound {$rangeData['total_count']} proxy users with employee_id between 1000 and 5000:\n";
+        
+        // Display the results
+        foreach ($rangeData['data'] as $proxyUser) {
+            $employee_id = isset($proxyUser['proxy_user_metadata']['employee_id']) ? 
+                $proxyUser['proxy_user_metadata']['employee_id'] : 'N/A';
+            echo "  - {$proxyUser['proxy_user_id']}: EmployeeId = $employee_id\n";
+        }
+    } else {
+        echo "Error in range search: " . json_encode($rangeData) . "\n";
+    }
+}
+
+// Close cURL session
+curl_close($ch);
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+// API credentials
+const (
+	APIPublicKey  = "your_public_key"
+	APIPrivateKey = "your_private_key"
+	BaseURL       = "https://api.byteful.com/1.0/public/user"
+)
+
+// SearchResponse represents the API response structure
+type SearchResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+func main() {
+	// Create HTTP client
+	client := &http.Client{}
+
+	// Example 1: Search proxy users by exact metadata match (department = "Marketing")
+	// This will find all proxy users that have their department field in metadata set to "Marketing"
+	
+	// Build the URL with query parameters
+	exactMatchURL, err := url.Parse(BaseURL + "/proxy_user/search")
+	if err != nil {
+		fmt.Printf("Error parsing URL: %v\n", err)
+		return
+	}
+	
+	// Add query parameters
+	params := exactMatchURL.Query()
+	params.Add("proxy_user_metadata.department", "Marketing")
+	exactMatchURL.RawQuery = params.Encode()
+	
+	// Create a new request
+	exactMatchReq, err := http.NewRequest("GET", exactMatchURL.String(), nil)
+	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
+		return
+	}
+	
+	// Add authentication headers
+	exactMatchReq.Header.Add("X-API-Public-Key", APIPublicKey)
+	exactMatchReq.Header.Add("X-API-Private-Key", APIPrivateKey)
+	
+	// Execute the request
+	exactMatchResp, err := client.Do(exactMatchReq)
+	if err != nil {
+		fmt.Printf("Error executing exact match request: %v\n", err)
+		return
+	}
+	defer exactMatchResp.Body.Close()
+	
+	// Read and parse the response
+	exactMatchBody, err := ioutil.ReadAll(exactMatchResp.Body)
+	if err != nil {
+		fmt.Printf("Error reading exact match response: %v\n", err)
+		return
+	}
+	
+	// Check if the request was successful
+	if exactMatchResp.StatusCode != http.StatusOK {
+		fmt.Printf("Error in exact match search: %d\n%s\n", exactMatchResp.StatusCode, string(exactMatchBody))
+		return
+	}
+	
+	// Parse the JSON response
+	var exactMatchData SearchResponse
+	if err := json.Unmarshal(exactMatchBody, &exactMatchData); err != nil {
+		fmt.Printf("Error parsing exact match JSON: %v\n", err)
+		return
+	}
+	
+	// Display the results
+	fmt.Printf("Found %d proxy users in Marketing department:\n", exactMatchData.TotalCount)
+	for _, proxyUser := range exactMatchData.Data {
+		proxyUserID := proxyUser["proxy_user_id"]
+		metadata, ok := proxyUser["proxy_user_metadata"].(map[string]interface{})
+		if !ok {
+			metadata = map[string]interface{}{}
+		}
+		fmt.Printf("  - %v: %v\n", proxyUserID, metadata)
+	}
+
+	// Example 2: Search proxy users by metadata range (employee_id between 1000 and 5000)
+	// This will find all proxy users that have a employee_id value between 1000 and 5000
+	
+	// Build the URL with query parameters
+	rangeURL, err := url.Parse(BaseURL + "/proxy_user/search")
+	if err != nil {
+		fmt.Printf("Error parsing URL: %v\n", err)
+		return
+	}
+	
+	// Add query parameters
+	params = rangeURL.Query()
+	params.Add("proxy_user_metadata.min_employee_id", "1000")
+	params.Add("proxy_user_metadata.max_employee_id", "5000")
+	rangeURL.RawQuery = params.Encode()
+	
+	// Create a new request
+	rangeReq, err := http.NewRequest("GET", rangeURL.String(), nil)
+	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
+		return
+	}
+	
+	// Add authentication headers
+	rangeReq.Header.Add("X-API-Public-Key", APIPublicKey)
+	rangeReq.Header.Add("X-API-Private-Key", APIPrivateKey)
+	
+	// Execute the request
+	rangeResp, err := client.Do(rangeReq)
+	if err != nil {
+		fmt.Printf("Error executing range request: %v\n", err)
+		return
+	}
+	defer rangeResp.Body.Close()
+	
+	// Read and parse the response
+	rangeBody, err := ioutil.ReadAll(rangeResp.Body)
+	if err != nil {
+		fmt.Printf("Error reading range response: %v\n", err)
+		return
+	}
+	
+	// Check if the request was successful
+	if rangeResp.StatusCode != http.StatusOK {
+		fmt.Printf("Error in range search: %d\n%s\n", rangeResp.StatusCode, string(rangeBody))
+		return
+	}
+	
+	// Parse the JSON response
+	var rangeData SearchResponse
+	if err := json.Unmarshal(rangeBody, &rangeData); err != nil {
+		fmt.Printf("Error parsing range JSON: %v\n", err)
+		return
+	}
+	
+	// Display the results
+	fmt.Printf("\nFound %d proxy users with employee_id between 1000 and 5000:\n", rangeData.TotalCount)
+	for _, proxyUser := range rangeData.Data {
+		proxyUserID := proxyUser["proxy_user_id"]
+		metadata, ok := proxyUser["proxy_user_metadata"].(map[string]interface{})
+		if !ok {
+			metadata = map[string]interface{}{}
+		}
+		
+		employee_id, ok := metadata["employee_id"]
+		if !ok {
+			employee_id = "N/A"
+		}
+		
+		fmt.Printf("  - %v: EmployeeId = %v\n", proxyUserID, employee_id)
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class SearchProxyUsersByMetadata {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public/user";
+    
+    public static void main(String[] args) throws IOException, InterruptedException {
+        // Create HTTP client
+        HttpClient client = HttpClient.newHttpClient();
+        
+        // Create JSON parser
+        ObjectMapper mapper = new ObjectMapper();
+        
+        // Example 1: Search proxy users by exact metadata match (department = "Marketing")
+        // This will find all proxy users that have their department field in metadata set to "Marketing"
+        
+        // Build the URL with query parameters
+        String exactMatchParam = URLEncoder.encode("Marketing", StandardCharsets.UTF_8);
+        String exactMatchUrl = BASE_URL + "/proxy_user/search?proxy_user_metadata.department=" + exactMatchParam;
+        
+        // Create a new request
+        HttpRequest exactMatchRequest = HttpRequest.newBuilder()
+                .uri(URI.create(exactMatchUrl))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> exactMatchResponse = client.send(exactMatchRequest, 
+                HttpResponse.BodyHandlers.ofString());
+        
+        // Check if the request was successful
+        if (exactMatchResponse.statusCode() == 200) {
+            // Parse the JSON response
+            Map<String, Object> exactMatchData = mapper.readValue(exactMatchResponse.body(), Map.class);
+            
+            // Display the results
+            int totalCount = (int) exactMatchData.get("total_count");
+            List<Map<String, Object>> proxyUsers = (List<Map<String, Object>>) exactMatchData.get("data");
+            
+            System.out.println("Found " + totalCount + " proxy users in Marketing department:");
+            for (Map<String, Object> proxyUser : proxyUsers) {
+                String proxyUserId = (String) proxyUser.get("proxy_user_id");
+                Map<String, Object> metadata = proxyUser.containsKey("proxy_user_metadata") ? 
+                        (Map<String, Object>) proxyUser.get("proxy_user_metadata") : Map.of();
+                
+                System.out.println("  - " + proxyUserId + ": " + metadata);
+            }
+        } else {
+            System.out.println("Error in exact match search: " + exactMatchResponse.statusCode());
+            System.out.println(exactMatchResponse.body());
+        }
+        
+        // Example 2: Search proxy users by metadata range (employee_id between 1000 and 5000)
+        // This will find all proxy users that have a employee_id value between 1000 and 5000
+        
+        // Build the URL with query parameters
+        String rangeUrl = BASE_URL + "/proxy_user/search" + 
+                "?proxy_user_metadata.min_employee_id=1000" +
+                "&proxy_user_metadata.max_employee_id=5000";
+        
+        // Create a new request
+        HttpRequest rangeRequest = HttpRequest.newBuilder()
+                .uri(URI.create(rangeUrl))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> rangeResponse = client.send(rangeRequest, 
+                HttpResponse.BodyHandlers.ofString());
+        
+        // Check if the request was successful
+        if (rangeResponse.statusCode() == 200) {
+            // Parse the JSON response
+            Map<String, Object> rangeData = mapper.readValue(rangeResponse.body(), Map.class);
+            
+            // Display the results
+            int totalCount = (int) rangeData.get("total_count");
+            List<Map<String, Object>> proxyUsers = (List<Map<String, Object>>) rangeData.get("data");
+            
+            System.out.println("\nFound " + totalCount + " proxy users with employee_id between 1000 and 5000:");
+            for (Map<String, Object> proxyUser : proxyUsers) {
+                String proxyUserId = (String) proxyUser.get("proxy_user_id");
+                
+                Object employee_id = "N/A";
+                if (proxyUser.containsKey("proxy_user_metadata")) {
+                    Map<String, Object> metadata = (Map<String, Object>) proxyUser.get("proxy_user_metadata");
+                    if (metadata.containsKey("employee_id")) {
+                        employee_id = metadata.get("employee_id");
+                    }
+                }
+                
+                System.out.println("  - " + proxyUserId + ": EmployeeId = " + employee_id);
+            }
+        } else {
+            System.out.println("Error in range search: " + rangeResponse.statusCode());
+            System.out.println(rangeResponse.body());
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Key Concepts
+
+1. **Exact Metadata Matching**: Use `proxy_user_metadata.field_name` to search for proxy users with a specific value in their metadata.
+
+2. **Range Filtering**: Use `proxy_user_metadata.min_field_name` and `proxy_user_metadata.max_field_name` to search for proxy users with metadata values within a specific range.
+
+## Advanced Metadata Search Operators
+
+In addition to exact matching and range filtering, the Byteful API supports several advanced operators that provide more flexibility when searching proxy users by their metadata.
+
+### Pattern Matching with `like_`
+
+The `like_` operator allows you to search for proxy users with metadata fields that match a specific pattern. This is particularly useful for partial text matches.
+
+**Example: Find proxy users with email addresses from a specific domain**
+
+```
+proxy_user_metadata.like_email=@example.com
+```
+
+This will match any proxy user with an email field in their metadata that contains "@example.com".
+
+**Example: Find proxy users with names starting with a specific prefix**
+
+```
+proxy_user_metadata.like_name=John%
+```
+
+The `%` character acts as a wildcard. This query would match names like "John", "Johnny", "Johnson", etc.
+
+### Existence Checking with `exists_`
+
+The `exists_` operator allows you to find proxy users that have a particular metadata field defined, regardless of its value.
+
+**Example: Find proxy users that have a department field**
+
+```
+exists_proxy_user_metadata.department=true
+```
+
+This will return all proxy users that have the "department" field in their metadata, regardless of what department it is.
+
+**Example: Find proxy users without a specific field**
+
+```
+exists_proxy_user_metadata.end_date=false
+```
+
+This will return all proxy users that do not have an "end_date" field in their metadata.
+
+### Negation with `not_`
+
+The `not_` operator allows you to find proxy users where a metadata field does not match a specific value.
+
+**Example: Find proxy users not in the Marketing department**
+
+```
+proxy_user_metadata.not_department=Marketing
+```
+
+This will return all proxy users whose department field is not set to "Marketing".
+
+**Example: Find proxy users with employee_id outside a specific range**
+
+```
+proxy_user_metadata.not_min_employee_id=1000
+proxy_user_metadata.not_max_employee_id=5000
+```
+
+This will return proxy users whose employee_id is less than 1000 or greater than 5000.
+
+## Combining Search Operators
+
+You can combine multiple search operators to create complex queries.
+
+**Example: Find active proxy users in the Sales department with an email from example.com**
+
+```
+proxy_user_metadata.department=Sales
+proxy_user_metadata.status=active
+proxy_user_metadata.like_email=@example.com
+```
+
+**Example: Find proxy users with a project field but without an end_date**
+
+```
+exists_proxy_user_metadata.project=true
+exists_proxy_user_metadata.end_date=false
+```

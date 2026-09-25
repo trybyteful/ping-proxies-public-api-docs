@@ -1,0 +1,109 @@
+---
+title: 'Proxy Testing'
+description: 'Understanding the Proxy Tester and its role in the Byteful API'
+---
+
+## Object Relationships
+
+The Continent object sits at the top of the geographic hierarchy in the Byteful API:
+
+- **Proxy Test Run**: The whole test that has run
+- **Proxy Tester Proxy**: Each proxy that has been tested
+- **Proxy Test Result**: The result of the test for a given proxy
+- **Proxy Test Server**: The server being used for each proxy test
+
+In the scenario below, **proxy A** and **proxy B** are being tested against `test_server_gb` and `test_server_us`.
+
+The following objects are created:
+
+```mermaid
+graph TD
+    A[Proxy Test Run] --> B["Proxy Tester Proxy (A)"]
+    A --> C["Proxy Tester Proxy (B)"]
+    
+    B --> D["Proxy Test Result (1) <br/><small>test_server_gb</small>"]
+    B --> E["Proxy Test Result (2) <br/><small>test_server_us</small>"]
+    
+    C --> F["Proxy Test Result (3) <br/><small>test_server_gb</small>"]
+    C --> G["Proxy Test Result (4) <br/><small>test_server_us</small>"]
+    
+    classDef testRun fill:#A192EC,stroke:#553c9a,stroke-width:2px,color:#fff
+    classDef proxy fill:#48bb78,stroke:#1fb356,stroke-width:2px,color:#fff
+    classDef testResult fill:#4299e1,stroke:#2b6cb0,stroke-width:2px,color:#fff
+    
+    class A testRun
+    class B,C proxy
+    class D,E,F,G testResult
+```
+
+## Key Components
+
+### Proxy Test Run
+
+The core testing workflow that orchestrates proxy validation across multiple test servers and target URLs.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `proxy_test_run_id` | string (uuid) (optional) | Unique identifier for the test run |
+| `proxies` | array | List of proxy objects to test with their configurations (Maximum 20)|
+| `urls` | array | Target URLs to test against |
+| `proxy_tester_server_id` | array (optional) | Test servers to use for validation |
+
+If no test server is provided, all test servers will be used.
+
+No more than 20 proxies can be tested in the same request.
+
+### Proxy Test Result
+
+Individual test results for each proxy-URL-server combination.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `proxy_test_result_id` | string (uuid) | Unique identifier for this specific test result |
+| `proxy_test_result_url` | string | The URL that was tested |
+| `proxy_test_result_is_successful` | boolean | Whether the test was completed successfully |
+| `proxy_test_result_error_code` | integer | The error code that was returned in the event of a failure |
+| `proxy_test_result_error_source` | integer | Stage at which the error occurred (client/proxy/target) |
+| `proxy_test_result_protocol` | string | Protocol used |
+| `proxy_test_result_response_time` | integer | Response time in milliseconds |
+| `proxy_test_server_id` | string | ID of the test server used |
+| `proxy_test_server_city_name` | string | City where the test server is located |
+| `proxy_test_server_country_id` | string | Country code of the test server |
+| `proxy_username` | string | Username used for proxy authentication |
+| `proxy_host` | string | Proxy server hostname/IP |
+| `proxy_port` | integer | Proxy server port |
+| `proxy_country_id` | string | Country where the proxy is located |
+| `proxy_city_name` | string | City where the proxy is located |
+| `proxy_asn_name` | string | ASN information for the proxy |
+
+### Proxy Errors
+If `proxy_test_result_is_successful` is not `true`, an error occurred during the testing process.
+
+**Code** - The error code will describe the error that occurred. For example: `dns_error`.
+
+**Source** - The source will describe the stage of the proxy testing process that the error occurred. For example: `client`.
+
+- **Client** - The error occurred within the client, before a connection was made to the proxy server. For example, a **DNS lookup failure**.
+- **Proxy** - The error occurred whilst connecting to the proxy server. For example, **invalid authentication**.
+- **Target** - The error occurred whilst connecting to the target. For example, **not found**.
+
+### Proxy Test Server
+
+Geographic test servers that perform the actual proxy validation.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `proxy_test_server_id` | string | Unique identifier for the test server |
+| `city_name` | string | City where the test server is located |
+| `country_id` | string | Country code of the test server |
+| `proxy_test_server_active` | boolean | Whether the server is currently active |
+| `proxy_test_server_ip_address` | string | IP address of the test server |
+| `proxy_test_server_port` | integer | Port used by the test server |
+
+## Related Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /public/user/proxy_test_run/create` | Create a new proxy test run |
+| `GET /public/user/proxy_test_server/search` | Get available test servers |
+

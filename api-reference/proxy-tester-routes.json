@@ -1,0 +1,465 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Proxy Tester Routes",
+    "version": "1.0",
+    "description": "Proxy tester specific routes extracted from the main API"
+  },
+  "paths": {
+    "/public/user/proxy_test_run/create": {
+      "post": {
+        "description": "Test all provided proxies against urls",
+        "tags": [
+          "Proxy Tester"
+        ],
+        "summary": "Create Proxy Test Run",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProxyTestRunCreateRequest"
+              }
+            }
+          },
+          "description": "Proxy Test Run Request",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyTestRunCreateResponse"
+                }
+              }
+            },
+            "description": "Successful proxy test creation"
+          }
+        },
+        "security": [
+          {
+            "APIPrivateKey": [],
+            "APIPublicKey": []
+          }
+        ]
+      }
+    },
+    "/public/user/proxy_test_run/retrieve/{test_run_id}": {
+      "get": {
+        "tags": [
+          "Proxy Tester"
+        ],
+        "summary": "Retrieve Proxy Test Results",
+        "description": "Retrieve the results from the given proxy test run",
+        "operationId": "retrieve-proxy-test",
+        "parameters": [
+          {
+            "name": "test_run_id",
+            "in": "path",
+            "description": "Test Run ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proxy_test_run_password",
+            "in": "query",
+            "description": "Retrieve test run with password",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyTestRunCreateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIPrivateKey": [],
+            "APIPublicKey": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProxyTestRunCreateRequest": {
+        "type": "object",
+        "properties": {
+          "proxies": {
+            "type": "array",
+            "description": "The proxies to be tested",
+            "maxItems": 20,
+            "items": {
+              "required": [
+                "proxy_string"
+              ],
+              "type": "object",
+              "properties": {
+                "proxy_id": {
+                  "type": "string",
+                  "description": "ID that will be assigned to the proxy (optional)"
+                },
+                "proxy_string": {
+                  "oneOf": [
+                    {
+                      "title": "Colon-separated format",
+                      "type": "string",
+                      "description": "Format: IP:PORT:USERNAME:PASSWORD",
+                      "example": "209.99.134.6:5702:ftrdddgq:518vrc41xyms"
+                    },
+                    {
+                      "title": "HTTP",
+                      "type": "string",
+                      "description": "Format: http://USERNAME:PASSWORD@IP:PORT",
+                      "example": "http://ftrdddgq:518vrc41xyms@209.99.134.6:5702"
+                    },
+                    {
+                      "title": "HTTPS",
+                      "type": "string",
+                      "description": "Format: https://USERNAME:PASSWORD@IP:PORT",
+                      "example": "https://ftrdddgq:518vrc41xyms@209.99.134.6:5702"
+                    },
+                    {
+                      "title": "SOCKS",
+                      "type": "string",
+                      "description": "Format: socks://USERNAME:PASSWORD@IP:PORT",
+                      "example": "socks://ftrdddgq:518vrc41xyms@209.99.134.6:5702"
+                    },
+                    {
+                      "title": "SOCKS5",
+                      "type": "string",
+                      "description": "Format: socks5://USERNAME:PASSWORD@IP:PORT",
+                      "example": "socks5://ftrdddgq:518vrc41xyms@209.99.134.6:5702"
+                    }
+                  ]
+                }
+              }
+            },
+            "example": [
+              {
+                "proxy_id": "8ca1bf7f-7e8e-490e-ad0a-715e5eb060a6",
+                "proxy_string": "209.99.134.6:5702:ftrdddgq:518vrc41xyms"
+              }
+            ]
+          },
+          "proxy_tester_server_id": {
+            "type": "array",
+            "description": "ID of the server to test the proxy on (optional - all will be used if not provided)",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "london-2-digitalocean-proxytester-1"
+            ]
+          },
+          "urls": {
+            "type": "array",
+            "description": "URLs to test the proxy against",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "https://google.com"
+            ]
+          }
+        }
+      },
+      "ProxyTestRunCreateResponse": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "array",
+            "description": "ID of the proxy test run object that was created",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "5b1494e7-663f-4af6-adf8-67ec8b18cf66"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Each proxy is under its ID as a key",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "description": "All tests are provided as a list",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "proxy_test_result_id": {
+                        "type": "string",
+                        "description": "ID of the proxy test result"
+                      },
+                      "proxy_test_run_id": {
+                        "type": "string",
+                        "description": "ID of the proxy test run"
+                      },
+                      "proxy_tester_proxy_id": {
+                        "type": "string",
+                        "description": "ID assigned to the proxy"
+                      },
+                      "proxy_test_result_url": {
+                        "type": "string",
+                        "description": "URL that the proxy was tested against"
+                      },
+                      "proxy_test_result_is_successful": {
+                        "type": "boolean",
+                        "description": "Whether the proxy test was successful"
+                      },
+                      "proxy_test_result_error_code": {
+                        "type": "string",
+                        "description": "Error code that was returned"
+                      },
+                      "proxy_test_result_error_source": {
+                        "type": "string",
+                        "description": "Stage at which the error code that was returned"
+                      },
+                      "proxy_test_result_protocol": {
+                        "type": "string",
+                        "description": "Protocol that was used (http/socks/socks5)"
+                      },
+                      "proxy_test_result_response_time": {
+                        "type": "integer",
+                        "description": "Time taken for the test to complete"
+                      },
+                      "proxy_test_server_id": {
+                        "type": "string",
+                        "description": "ID of the server the test was run on"
+                      },
+                      "proxy_test_server_city_id": {
+                        "type": "integer",
+                        "description": "ID of the city that the proxy was geolocated to"
+                      },
+                      "proxy_test_server_city_name": {
+                        "type": "string",
+                        "description": "ID of the city that the proxy was geolocated to"
+                      },
+                      "proxy_test_server_country_id": {
+                        "type": "string",
+                        "description": "Country ID of the server that the test was run on"
+                      },
+                      "proxy_test_result_creation_datetime": {
+                        "type": "string",
+                        "description": "When the proxy test was created"
+                      },
+                      "proxy_test_result_last_update_datetime": {
+                        "type": "string",
+                        "description": "When the proxy test was last updated"
+                      },
+                      "proxy_username": {
+                        "type": "string",
+                        "description": "Username from the proxy"
+                      },
+                      "proxy_host": {
+                        "type": "string",
+                        "description": "Host from the proxy"
+                      },
+                      "proxy_port": {
+                        "type": "integer",
+                        "description": "Port from the proxy"
+                      },
+                      "proxy_ip_address": {
+                        "type": "string",
+                        "description": "The exit ip address of the proxy"
+                      },
+                      "proxy_country_id": {
+                        "type": "string",
+                        "description": "ID of the Country that the proxy was geolocated to"
+                      },
+                      "proxy_city_id": {
+                        "type": "integer",
+                        "description": "ID of the City that the proxy was geolocated to"
+                      },
+                      "proxy_city_name": {
+                        "type": "string",
+                        "description": "City name that the proxy was geolocated to"
+                      },
+                      "proxy_asn_id": {
+                        "type": "integer",
+                        "description": "ID of the ASN that the proxy is assigned to"
+                      },
+                      "proxy_asn_name": {
+                        "type": "string",
+                        "description": "Name of the ASN that the proxy is assigned to"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "example": {
+              "db8cd8d3-bc99-4880-9a1d-233af9a35eda": {
+                "results": [
+                  {
+                    "proxy_test_result_id": "38c1c64b-af29-4e3d-93f2-4c1a1a313ac5",
+                    "proxy_test_run_id": "5b1494e7-663f-4af6-adf8-67ec8b18cf66",
+                    "proxy_tester_proxy_id": "db8cd8d3-bc99-4880-9a1d-233af9a35eda",
+                    "proxy_test_result_url": "https://google.com",
+                    "proxy_test_result_is_successful": false,
+                    "proxy_test_result_error_code": "bad_request",
+                    "proxy_test_result_error_source": "target",
+                    "proxy_test_result_protocol": "http",
+                    "proxy_test_result_response_time": 224,
+                    "proxy_test_server_id": "london-2-digitalocean-proxytester-1",
+                    "proxy_test_server_city_id": 383210,
+                    "proxy_test_server_city_name": "London",
+                    "proxy_test_server_country_id": "gb",
+                    "proxy_test_result_creation_datetime": "2025-01-24 09:34:56",
+                    "proxy_test_result_last_update_datetime": "2025-01-24 09:34:56",
+                    "proxy_username": "ftrdddgq",
+                    "proxy_host": "148.135.178.94",
+                    "proxy_port": 5655,
+                    "proxy_ip_address": "148.135.178.94",
+                    "proxy_country_id": "fr",
+                    "proxy_city_id": 379657,
+                    "proxy_city_name": "Paris",
+                    "proxy_asn_id": 29802,
+                    "proxy_asn_name": "AS29802 HIVELOCITY, Inc."
+                  }
+                ]
+              }
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "Response message from the API",
+            "example": "Successfully returned proxy test run"
+          },
+          "proxy_test_result_created": {
+            "type": "array",
+            "description": "IDs of the test result objects that were created",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "38c1c64b-af29-4e3d-93f2-4c1a1a313ac5"
+            ]
+          },
+          "proxy_tester_proxy_created": {
+            "type": "array",
+            "description": "IDs of the proxy tester proxy objects that were created",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "db8cd8d3-bc99-4880-9a1d-233af9a35eda"
+            ]
+          }
+        }
+      },
+      "ProxyTestServer": {
+        "type": "object",
+        "properties": {
+          "city_id": {
+            "type": "integer"
+          },
+          "city_name": {
+            "type": "string"
+          },
+          "country_id": {
+            "type": "string"
+          },
+          "proxy_test_server_active": {
+            "type": "boolean"
+          },
+          "proxy_test_server_creation_datetime": {
+            "type": "string"
+          },
+          "proxy_test_server_id": {
+            "type": "string"
+          },
+          "proxy_test_server_ip_address": {
+            "type": "string"
+          },
+          "proxy_test_server_last_update_datetime": {
+            "type": "string"
+          },
+          "proxy_test_server_password": {
+            "type": "string"
+          },
+          "proxy_test_server_port": {
+            "type": "integer"
+          },
+          "proxy_test_server_username": {
+            "type": "string"
+          }
+        }
+      },
+      "ProxyTestServerSearchResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "servers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ProxyTestServer"
+                }
+              },
+              "proxy_test_server_id_closest": {
+                "type": "string"
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Not Found"
+          },
+          "message": {
+            "type": "string",
+            "example": "Could not find proxy test run"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "APIPrivateKey": {
+        "description": "Private API key for user-level authentication.",
+        "in": "header",
+        "name": "X-API-Private-Key",
+        "type": "apiKey"
+      },
+      "APIPublicKey": {
+        "description": "Public API key for user-level authentication.",
+        "in": "header",
+        "name": "X-API-Public-Key",
+        "type": "apiKey"
+      }
+    }
+  }
+}

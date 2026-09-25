@@ -1,0 +1,32 @@
+---
+title: "Integrating on Android or iOS"
+description: "Learn how to use Byteful on mobile devices, including setup recommendations for iOS and Android."
+---
+
+Byteful can be used on mobile devices, but native proxy support on both iOS and Android has several limitations that affect compatibility and performance when using authenticated proxies.
+
+## Limitations of Native Proxy Support
+
+Both iOS and Android offer built-in proxy settings under Wi-Fi network configurations. While this allows basic proxy routing, it comes with the following limitations:
+
+- No ability to restrict or route traffic by app
+- No visibility into proxy status or traffic logs
+- No support for rule-based routing or custom DNS
+
+For this reason, we recommend using third-party proxy clients that are purpose-built for mobile.
+
+## Recommended Apps
+
+### iOS & Android — Use Shadowrocket
+
+We recommend using **Shadowrocket**, a powerful proxy client that supports:
+
+- Full authentication (username and password)
+- HTTP, HTTPS, SOCKS5, and custom rule routing
+- Per-domain and per-app rules
+- DNS over HTTPS and custom DNS settings
+- Detailed logging and connection stats
+
+> 📘 To get started, follow our [Shadowrocket Integration Guide](/general/integration/shadowrocket) for a complete walkthrough.
+
+Shadowrocket is a paid app available on the App Store. Once configured, it enables seamless proxy usage across all apps on the device.

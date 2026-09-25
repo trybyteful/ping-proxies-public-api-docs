@@ -1,0 +1,342 @@
+---
+title: 'Purchasing via API'
+description: 'How to programmatically purchase and manage proxies through the Byteful API'
+---
+
+# Purchasing via API
+
+The Byteful API enables complete programmatic control over the purchasing and management of proxy services. This guide covers how to browse available products, generate quotes, create checkouts, and manage ongoing services.
+
+## Overview of the Purchasing Process
+
+<img className="block dark:hidden" src="/images/api//purchase-flow-light.svg" alt="API Purchase Flow" />
+<img className="hidden dark:block" src="/images/api//purchase-flow-dark.svg" alt="API Purchase Flow" />
+
+## Browsing Available Products
+
+Start by retrieving the available products through the catalog endpoint:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/checkout/catalog' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "datacenter_us": {
+      "country_id": "us",
+      "product_cycle_options": ["1:month", "3:month", "1:year"],
+      "product_is_available": true,
+      "product_is_per_ip": true,
+      "product_name": "Datacenter Proxies [US]",
+      "product_protocol": "ipv4",
+      "product_stock": 10,
+      "product_type": "datacenter"
+    },
+    "isp_gb": {
+      "country_id": "gb",
+      "product_cycle_options": ["1:month", "3:month", "1:year"],
+      "product_is_available": true,
+      "product_is_per_ip": true,
+      "product_name": "Static Residential ISP Proxies [GB]",
+      "product_protocol": "ipv4",
+      "product_stock": 181,
+      "product_type": "isp"
+    },
+    "residential_global": {
+      "country_id": null,
+      "product_cycle_options": ["1:month"],
+      "product_is_available": true,
+      "product_is_per_ip": false,
+      "product_name": "Residential Proxies (Global)",
+      "product_protocol": null,
+      "product_stock": null,
+      "product_type": "residential"
+    },
+    "mobile_global": {
+      "country_id": null,
+      "product_cycle_options": ["1:month"],
+      "product_is_available": true,
+      "product_is_per_ip": false,
+      "product_name": "Mobile Proxies (Global)",
+      "product_protocol": null,
+      "product_stock": null,
+      "product_type": "mobile"
+    }
+  },
+  "message": "Checkout catalog successfully retrieved."
+}
+```
+
+For more detailed product information, you can use the product search endpoint:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/product/search?product_type=isp&country_id=us' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Generating a Quote
+
+Before completing a purchase, generate a quote to check pricing, availability, and any applicable discounts:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/checkout/quote' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "product_code": "isp_us",
+    "quantity": 5,
+    "cycle_interval": "month",
+    "cycle_interval_count": 1,
+    "promotional_code": "WELCOME10"
+  }'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "before_discount_total": 1750,
+    "credit_balance": 500,
+    "credit_only_checkout": false,
+    "customer_credit_balance_applied": true,
+    "customer_credit_balance_applied_amount": 500,
+    "discount": 175,
+    "discounted": true,
+    "is_valid": true,
+    "line_items": [
+      {
+        "item_country_id": "us",
+        "item_name": "Static Residential ISP Proxies [US]",
+        "item_per_unit_amount": 350,
+        "item_price_id": "price_1QJx2DB2BUlqim5lxmO3aT2v",
+        "item_price_type": "recurring",
+        "item_quantity": 5,
+        "item_total": 1750,
+        "item_type": "isp",
+        "service_fulfillment_filter": {}
+      }
+    ],
+    "promotional_code": "WELCOME10",
+    "promotional_code_id": "promo_1RbySPB2BUlqim5lZkfUaYdE",
+    "total": 1575,
+    "total_after_applied_credit": 1075
+  },
+  "message": "Quote generated successfully."
+}
+```
+
+The quote provides detailed information including:
+- Original price before discounts
+- Any promotional discounts applied
+- Credit balance that will be applied
+- Final amount due
+
+## Creating a Checkout
+
+Once you're satisfied with the quote, create a checkout to complete the purchase:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/checkout/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "product_code": "isp_us",
+    "quantity": 5,
+    "cycle_interval": "month",
+    "cycle_interval_count": 1,
+    "promotional_code": "WELCOME10",
+    "service_fulfillment_filter": {
+      "asn_id": 7018
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "created": ["API-1234-5678"],
+    "invoice_is_paid": false,
+    "invoice_url": "https://invoice.stripe.com/i/acct_1H7dAB2BUlqim5l/test_YWNjdF8xSGIzUEFCMkJabsEyzPS3Aag",
+    "proxies": [],
+    "proxy_edited": [],
+    "residential_ledger_created": [],
+    "mobile_ledger_created": [],
+    "service": {
+      "country_id": "us",
+      "customer_id": 1976,
+      "open_invoice_id": "in_1TsPgdB2BUlqim5lkTytLb8K",
+      "payment_method_id": null,
+      "product_id": "prod_AT7018",
+      "service_creation_datetime": "2025-03-25 14:25:36",
+      "service_cycle": "1:month",
+      "service_dispatch_datetime": null,
+      "service_earliest_cancellation_datetime": "2025-03-25 14:25:36",
+      "service_expiry_datetime": "2025-04-25 14:25:36",
+      "service_fulfillment_filter": {"asn_id": 7018},
+      "service_id": "API-1234-5678",
+      "service_image": "https://files.stripe.com/links/MDB8YWNjdF8xSDdkOEFCMkJVbHFpbTVsfGZsX2xpdmVfZFZ6TTZjUG01Q0NuR1IzSTZsVzNjVVFX00kUPPfQE9",
+      "service_is_automatic_collection": true,
+      "service_is_cancellable": true,
+      "service_is_off_catalog": false,
+      "service_is_pending_cancellation": false,
+      "service_is_reconfigurable": true,
+      "service_last_update_datetime": "2025-03-25 14:25:36",
+      "service_metadata": {},
+      "service_name": "AT&T ISP Proxies [US]",
+      "service_price_id": "price_1QJx2DB2BUlqim5lxmO3aT2v",
+      "service_promotional_code": "WELCOME10",
+      "service_protocol": "ipv4",
+      "service_quantity": 5,
+      "service_status": "awaiting_fulfillment",
+      "service_subscription_id": "sub_1QxSHmB2BUlqim5lTUH8HvKa",
+      "service_subscription_is_paused": false,
+      "service_total": 1575,
+      "service_type": "isp",
+      "subscription_schedule_id": null
+    },
+    "service_id": "API-1234-5678"
+  },
+  "message": "Successfully created checkout. Please complete payment at the invoice URL."
+}
+```
+
+### Payment Processing
+
+If your account has sufficient credit, `invoice_is_paid` will be `true` and the service provisions immediately. Otherwise, use the `invoice_url` to complete payment.
+
+## Service Fulfillment Filters
+
+For certain proxy types, you can specify service fulfillment filters to customize the provisioning:
+
+```json
+"service_fulfillment_filter": {
+  "asn_id": 7018,        // Specific ASN (e.g., AT&T)
+  "subdivision_id": "us-tx",  // Specific region (e.g., Texas)
+  "city_id": 75202       // Specific city (e.g., Dallas)
+}
+```
+
+These filters allow you to target proxies with specific attributes such as:
+- Network provider (ASN)
+- Geographic location (country, subdivision, city)
+- Protocol preferences (IPv4, IPv6, dual-stack)
+
+## Managing Account Credit
+
+Your account credit serves as a prepaid balance that can be applied to any purchase. This credit balance can come from:
+
+1. **Direct top-ups**: Adding funds to your account
+2. **Refunds**: Credits issued for service issues
+3. **Promotional credits**: Special credits from promotional campaigns
+
+### Viewing Credit Balance
+
+Check your current credit balance:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/customer/retrieve' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+The response includes your current credit balance:
+
+```json
+{
+  "data": {
+    "credit_balance": 500,
+    // Other customer fields...
+  },
+  "message": "Customer successfully retrieved."
+}
+```
+
+### Adding Credit
+
+To top up your credit balance, use the checkout endpoint with the credit product:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/checkout/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "product_code": "credit",
+    "quantity": 1,
+    "cycle_interval": "month",
+    "cycle_interval_count": 1,
+    "top_up_amount": 5000
+  }'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "invoice_is_paid": false,
+    "invoice_url": "https://invoice.stripe.com/i/acct_1H7dAB2BUlqim5l/test_YWNjdF8xSGIzUEFCMkJabsEyzPS3Aag",
+    "credit_added": true
+  },
+  "message": "Successfully created checkout. Please complete payment at the invoice URL."
+}
+```
+
+
+## Residential and Mobile Data Management
+
+For residential and mobile proxies, which use a data-based model instead of a per-proxy model, you can monitor your data usage:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/residential/summary' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Use `/1.0/public/user/mobile/summary` for mobile data
+
+Response:
+
+```json
+{
+  "data": {
+    "residential_bytes": 10737418240,     // Total allocated data (10 GB)
+    "residential_bytes_used": 3221225472, // Used data (3 GB)
+    "residential_bytes_left": 7516192768, // Remaining data (7 GB)
+    "residential_requests": 145022,       // Total number of requests
+    "service_expiry_datetime": "2025-04-25 14:25:36",
+    "service_id": "121-0220-821",
+    "proxy_user_ids": ["default_user", "stevejobs"]
+  },
+  "message": "Residential summary successfully generated."
+}
+```
+
+## Best Practices
+
+- Test purchases with small quantities before automating
+- Monitor credit balance to ensure sufficient funds for automated purchases
+- Implement robust error handling for checkout responses
+- Track service IDs returned from successful purchases
+
+<Note>
+  For high-volume purchasing needs or custom fulfillment requirements, contact sales@byteful.com.
+</Note>

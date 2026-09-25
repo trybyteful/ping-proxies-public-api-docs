@@ -1,0 +1,78 @@
+---
+title: 'Log'
+description: 'Understanding the Log object and its role in the Byteful API'
+---
+
+The Log object represents an individual proxy request in the Byteful system. It contains detailed information about proxy usage, including client information, geographic data, request details, and timestamps. Logs provide granular visibility into how your proxies are being utilized and are crucial for troubleshooting, usage analysis, and security monitoring.
+
+## Key Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `log_id` | string | Unique identifier for the log entry |
+| `proxy_user_id` | string | ID of the proxy user that made the request |
+| `service_id` | string | ID of the service associated with the proxy |
+| `log_network` | string | Network type (datacenter, isp, residential, mobile) |
+| `log_protocol` | string | Protocol used (http, socks) |
+| `log_hostname` | string | The target domain of the request |
+| `log_client_ip_address` | string | IP address of the client that made the request |
+| `log_total_bytes` | integer | Total data transferred in bytes |
+| `log_request_datetime` | datetime | When the request was made |
+| `log_authentication_type` | integer | Authentication method used |
+| `log_session_id` | string | Session identifier for tracking related requests |
+| `country_id` | string | Country code where the request was processed |
+| `city_alias` | string | City identifier where the request was processed |
+| `asn_id` | integer | ASN (Autonomous System Number) identifier |
+
+## Data Retention
+
+Raw logs are stored for a limited time period:
+
+- Individual request logs are retained for **7 days**
+- Logs are instantly aggregated into `log_summary` objects when created
+- After the 7-day period, individual logs are removed and data is accessible only through the aggregated `log_summary` objects
+
+## Object Relationships
+
+The Log object is connected to several other objects in the Byteful system.
+
+- **Proxy User**: Each log is associated with the proxy user that made the request
+- **Service**: Logs are linked to the service that provided the proxy
+- **Log Summary**: Logs are instantly aggregated into log summaries at creation time
+- **Geographic Entities**: Logs contain references to country, city, and ASN information
+
+## Related Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /public/user/log/search` | Search logs with various filters |
+| `GET /public/user/log/retrieve/{log_id}` | Retrieve a specific log entry |
+| `GET /public/user/analytics/graph` | Graph data derived from logs |
+
+## Example Log Object
+
+```json
+{
+  "log_id": "123e4567-e89b-12d3-a456-426614174000",
+  "proxy_user_id": "stevejobs",
+  "log_network": "isp",
+  "log_protocol": "http",
+  "log_hostname": "apple.com",
+  "log_client_ip_address": "17.172.224.1",
+  "log_total_bytes": 5120,
+  "log_request_datetime": "2025-04-01 13:00:00",
+  "country_id": "us",
+  "city_alias": "cupertino",
+  "asn_id": 1299
+}
+```
+
+## Usage Notes
+
+- Logs provide the most detailed view of proxy activity but are only available for a short time period (7 days)
+- For each request through a proxy, a corresponding log entry is created and simultaneously aggregated into a log summary
+- Multiple filtering options are available to analyze logs by user, domain, location, and more
+- For residential/mobile proxies, logs contribute to data usage calculations in the `residential_ledger` and `mobile_ledger`
+- Log entries include information about the client making the request, which helps with troubleshooting and identifying potential abuse
+- For long-term analysis, use `log_summary` objects which retain aggregated data for 90+ days
+- While individual logs are removed after 7 days, the aggregated data in log summaries remains accessible

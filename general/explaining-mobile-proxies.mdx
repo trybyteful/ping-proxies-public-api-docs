@@ -1,0 +1,130 @@
+---
+title: 'Understanding Mobile Proxies'
+description: 'Learn about mobile proxies, their benefits, and how they work at Byteful'
+---
+<img
+  src="/images/general/mobile-proxies.png"
+  alt="Byteful Mobile Proxies"
+/>
+
+Mobile proxies are proxy servers that use real mobile IP addresses. Unlike other proxy types that rely on datacenters or servers, mobile proxies route traffic through devices of users on mobile networks. This changes your own IP address to a mobile IP address in a different location.
+
+## Why Use Mobile Proxies?
+
+With mobile proxies, websites can't easily detect that your traffic is coming from a proxy. Since many websites and services tend to ban IPs that are identifiable as proxies, using a mobile proxy is the most effective way to avoid such restrictions.
+
+<Card title="Key Benefits" icon="star">
+  - Higher success rates on restrictive websites
+  - More natural browsing patterns
+  - Access to geo-restricted content
+  - Lower detection rates
+  - Wide range of locations
+</Card>
+
+## When to Use Mobile Proxies
+
+Mobile proxies sit in a different part of the trade-off space to residential proxies. Here's how to think about it as a developer.
+
+### Pros
+
+- **Hardest IPs to ban or rate limit.** Mobile carriers run their networks behind CGNAT (Carrier-Grade NAT), so thousands of real users share each public IP. Banning a single mobile IP means cutting off a lot of legitimate traffic, so target sites are very cautious about doing it.
+- **Dynamic behaviour is assumed.** Mobile devices are expected to roam, drop connections and rotate addresses. Patterns that would look suspicious on a fixed line look completely normal coming from a mobile IP.
+
+### Cons
+
+- **Smaller pool size.** Because every mobile IP sits behind thousands of users, the total node count is lower than a large residential network. This is largely offset by how hard each IP is to ban, but it's worth knowing if you're running very high concurrency.
+- **Slightly worse network performance.** Mobile proxies have higher latency, lower throughput and less stable connections than residential proxies. Not bad, just worse in comparison. This is a characteristic of 4G/5G networks versus fixed-line residential connections, plus the fact that the underlying device may be moving or hitting signal changes.
+
+### Which one should you pick?
+
+Reach for mobile proxies when the target is aggressive about banning residential IPs, or when you need the highest possible trust score on a request. Common cases include social networks, sneaker and ticketing sites, ad verification, and anything mobile-first.
+
+If the target is less hostile and you care more about raw throughput, concurrency or steady connections, residential proxies are usually the better fit.
+
+## How Mobile Proxies Are Charged
+
+Mobile proxies at Byteful use a **Pay per GB model**. Charges are based on the amount of data (data) transferred through the proxy service.
+
+<Note>
+This is similar to how mobile phone plans charge for data usage - you pay for what you consume. For instance, just as you might pay for 5GB of mobile phone data per month, you could pay for 5GB of proxy data.
+</Note>
+
+This model is particularly beneficial for users who need access to a wide range of IP addresses across various regions but may not have consistent or high-volume usage.
+
+## Unlimited Proxy Generation
+
+Yes! We have no limitations on proxies or concurrency with our mobile data packages since they're charged per GB.
+
+This means you can generate millions of different proxies and use them concurrently without worrying about rate-limiting. Your only constraint is the amount of data in your account.
+
+## Geographic Coverage
+
+Our mobile network spans over 6 million monthly IPs across 1,500+ cities in 190+ countries. After purchase, you can select the country or city you'd like to geolocate your proxies to.
+
+<Warning>
+Increasing the precision of proxy geolocation reduces the number of available proxies. We generally recommend using country-level geolocation, unless you specifically need city-based proxies. This approach provides a good balance between location accuracy and proxy pool size.
+</Warning>
+
+## Carrier and ASN Targeting
+
+Yes! All plans come with carrier and ASN targeting as standard, with IPs sourced from 650+ mobile carriers worldwide.
+
+We offer proxies from all major carriers including:
+- China Mobile
+- Reliance Jio
+- Vodafone Group
+- Bharti Airtel
+- Verizon
+- AT&T
+- Deutsche Telekom
+- T-Mobile US
+- And hundreds more
+
+<Tip>
+Limiting the ASN of your proxies reduces the number of available proxies. Unless you specifically need proxies from a specific carrier, we generally recommend leaving this feature off.
+</Tip>
+
+## Ethical Sourcing
+
+Yes! Byteful partners with SDK providers and peer payment applications which compensate developers and end-users for their participation in our network.
+
+These programs pay regular internet users and/or developers who participate in the network. SDK providers and partner applications must get opt-in consent from end-users. This way, users and developers are fairly compensated and are always well-informed about how their IP addresses might be used.
+
+<Card title="Ethical Commitment" icon="shield-check">
+On top of that, Byteful has a strict [Acceptable Usage Policy](/general/acceptable-usage-policy) which helps ensure that users don't misuse the proxy. This protects everyone within the proxy network and minimizes the amount of shady or illegal activities.
+</Card>
+
+## Next Steps
+
+Now that you understand the basics of mobile proxies, you might want to explore:
+
+<CardGroup cols={2}>
+  <Card
+    title="Generating Mobile Proxies"
+    icon="network-wired"
+    href="/general/generating-mobile-proxies"
+  >
+    Learn how to create and manage mobile proxies for your needs
+  </Card>
+  <Card
+    title="Sticky vs Rotating Proxies"
+    icon="rotate"
+    href="/general/sticky-vs-rotating-mobile-proxies"
+  >
+    Understand the difference between sticky and rotating mobile proxies
+  </Card>
+  <Card
+    title="Geolocation Targeting"
+    icon="globe"
+    href="/general/geolocating-targeting-mobile"
+  >
+    Learn how to target specific countries and cities with your proxies
+  </Card>
+  <Card
+    title="ISP & ASN Targeting"
+    icon="server"
+    href="/general/isp-asn-targeting-mobile"
+  >
+    Discover how to target specific carriers and networks
+  </Card>
+</CardGroup>
