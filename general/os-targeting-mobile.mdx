@@ -1,0 +1,58 @@
+---
+title: 'OS Targeting'
+description: 'How to target specific operating systems with mobile proxies'
+---
+
+Operating system targeting comes as standard with mobile data purchases. You can target proxies on devices running the following operating systems: `windows`, `linux`, and `android`.
+
+<Info>
+  BETA: we cannot guarantee that OS targeting will persist in the future for our mobile network proxies.
+</Info>
+
+Limiting the operating system of your proxies reduces the number of available proxies. Unless you specifically need proxies from devices running a specific operating system then we generally recommend leaving this feature off.
+
+You can specify an operating system for a proxy by adding the OS in this format: `_os_{operating_system}` to the username field of the proxy.
+
+## OS Targeting
+
+```bash
+# Generate 5 proxies from devices running Linux
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?list_os=linux&list_count=5' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+This will return proxies exclusively from devices running the specified operating system:
+
+```json
+{
+  "data": [
+    "mobile.byteful.com:15391:your_user_os_linux_s_TNJJENYJ5F4802LK:your_password",
+    "mobile.byteful.com:15452:your_user_os_linux_s_RK9TB7HK0CIW0TC0:your_password",
+    "mobile.byteful.com:15288:your_user_os_linux_s_PGSQD4C0LTV2UZ8B:your_password",
+    "mobile.byteful.com:15034:your_user_os_linux_s_7QA931N9NE57I87U:your_password",
+    "mobile.byteful.com:15863:your_user_os_linux_s_WPNYF1EMPF9UKSNH:your_password"
+  ],
+  "message": "Mobile list successfully generated."
+}
+
+```
+
+## Combining OS Targeting with Other Filters
+
+For advanced targeting, you can combine OS targeting with geolocation targeting:
+
+```bash
+# Generate 3 proxies from Windows devices in the US
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?country_id=us&list_os=windows&list_count=3' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Dashboard Generation
+
+You can also easily generate OS targeted proxies through our dashboard interface by selecting the desired operating system from the dropdown menu in the mobile proxy generator.
+
+For more information on generating mobile proxies, see the [Generating Mobile Proxies](/general/generating-mobile-proxies) guide.

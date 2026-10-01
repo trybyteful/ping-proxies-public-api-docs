@@ -1,0 +1,641 @@
+---
+title: "Manage Proxy User ACLs"
+description: "Learn how to search, add, and remove Proxy User ACL entries to control access"
+icon: "list-check"
+---
+
+This example demonstrates how to manage Proxy User ACL (Access Control List) entries. You'll learn how to view current ACLs, add new access permissions, and revoke access to services or proxies.
+
+<Info>
+Default Proxy Users cannot have ACL rules applied and have access to all proxies on your account.
+</Info>
+
+## Overview
+
+Common ACL management operations include:
+- **Searching** ACLs to see current permissions
+- **Adding** ACL entries to grant new access
+- **Removing** ACL entries to revoke access
+- **Changing** access types (e.g., from service to proxy restricted)
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+def search_acls(proxy_user_id):
+    """
+    Search for all ACL entries for a specific proxy user.
+
+    Args:
+        proxy_user_id: The proxy user ID to search ACLs for
+
+    Returns:
+        List of ACL entries or None if failed
+    """
+    params = {"proxy_user_id": proxy_user_id}
+
+    response = requests.get(
+        f"{BASE_URL}/user/proxy_user_acl/search",
+        params=params,
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        print(f"Error searching ACLs: {response.status_code}")
+        print(response.text)
+        return None
+
+    data = response.json()
+    acls = data.get("data", [])
+
+    print(f"\nFound {len(acls)} ACL entries for {proxy_user_id}:")
+    for acl in acls:
+        acl_id = acl.get("proxy_user_acl_id")
+        service_id = acl.get("service_id")
+        proxy_id = acl.get("proxy_id")
+
+        if service_id:
+            print(f"  - ACL {acl_id}: Service access to {service_id}")
+        elif proxy_id:
+            print(f"  - ACL {acl_id}: Proxy access to {proxy_id}")
+
+    return acls
+
+def add_service_access(proxy_user_id, service_id):
+    """
+    Add service access for a proxy user.
+
+    Args:
+        proxy_user_id: The proxy user ID
+        service_id: The service ID to grant access to
+
+    Returns:
+        The created ACL ID or None if failed
+    """
+    payload = {
+        "proxy_user_id": proxy_user_id,
+        "service_id": service_id
+    }
+
+    response = requests.post(
+        f"{BASE_URL}/user/proxy_user_acl/create",
+        json=payload,
+        headers=headers
+    )
+
+    if response.status_code != 201:
+        print(f"Error adding service access: {response.status_code}")
+        print(response.text)
+        return None
+
+    data = response.json()
+    acl_id = data["created"][0]
+    print(f"Successfully granted access to service {service_id}")
+    return acl_id
+
+def add_proxy_access(proxy_user_id, proxy_id):
+    """
+    Add proxy access for a proxy user.
+
+    Args:
+        proxy_user_id: The proxy user ID
+        proxy_id: The proxy ID to grant access to
+
+    Returns:
+        The created ACL ID or None if failed
+    """
+    payload = {
+        "proxy_user_id": proxy_user_id,
+        "proxy_id": proxy_id
+    }
+
+    response = requests.post(
+        f"{BASE_URL}/user/proxy_user_acl/create",
+        json=payload,
+        headers=headers
+    )
+
+    if response.status_code != 201:
+        print(f"Error adding proxy access: {response.status_code}")
+        print(response.text)
+        return None
+
+    data = response.json()
+    acl_id = data["created"][0]
+    print(f"Successfully granted access to proxy {proxy_id}")
+    return acl_id
+
+def remove_acl(acl_id):
+    """
+    Remove an ACL entry to revoke access.
+
+    Args:
+        acl_id: The ACL ID to delete
+
+    Returns:
+        True if successful, False otherwise
+    """
+    response = requests.delete(
+        f"{BASE_URL}/user/proxy_user_acl/delete/{acl_id}",
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        print(f"Error removing ACL: {response.status_code}")
+        print(response.text)
+        return False
+
+    print(f"Successfully removed ACL {acl_id}")
+    return True
+
+def change_access_type_to_all(proxy_user_id):
+    """
+    Change a proxy user's access type to 'all' (unrestricted).
+    This will also clear all existing ACL entries.
+
+    Args:
+        proxy_user_id: The proxy user ID
+
+    Returns:
+        True if successful, False otherwise
+    """
+    payload = {
+        "proxy_user_access_type": "all",
+        "clear_proxy_user_acl": True
+    }
+
+    response = requests.patch(
+        f"{BASE_URL}/user/proxy_user/edit/{proxy_user_id}",
+        json=payload,
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        print(f"Error changing access type: {response.status_code}")
+        print(response.text)
+        return False
+
+    print(f"Successfully changed {proxy_user_id} to unrestricted access")
+    return True
+
+# Example usage
+if __name__ == "__main__":
+    PROXY_USER_ID = "seo_team"
+
+    print("=== Example 1: View Current ACLs ===")
+    current_acls = search_acls(PROXY_USER_ID)
+
+    print("\n=== Example 2: Add Service Access ===")
+    add_service_access(PROXY_USER_ID, "API-NEW-SERVICE-001")
+
+    print("\n=== Example 3: Add Multiple Services ===")
+    for service_id in ["API-SERVICE-002", "API-SERVICE-003"]:
+        add_service_access(PROXY_USER_ID, service_id)
+
+    print("\n=== Example 4: View Updated ACLs ===")
+    updated_acls = search_acls(PROXY_USER_ID)
+
+    print("\n=== Example 5: Remove Specific ACL ===")
+    if updated_acls and len(updated_acls) > 0:
+        first_acl_id = updated_acls[0].get("proxy_user_acl_id")
+        remove_acl(first_acl_id)
+
+    print("\n=== Example 6: Change to Unrestricted Access ===")
+    # Uncomment to change to unrestricted access (removes all ACLs)
+    # change_access_type_to_all(PROXY_USER_ID)
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY,
+  'Content-Type': 'application/json'
+};
+
+/**
+ * Search for all ACL entries for a specific proxy user
+ */
+async function searchAcls(proxyUserId) {
+  try {
+    const url = new URL(`${BASE_URL}/user/proxy_user_acl/search`);
+    url.searchParams.append('proxy_user_id', proxyUserId);
+
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error searching ACLs: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+    const acls = data.data || [];
+
+    console.log(`\nFound ${acls.length} ACL entries for ${proxyUserId}:`);
+    for (const acl of acls) {
+      const aclId = acl.proxy_user_acl_id;
+      const serviceId = acl.service_id;
+      const proxyId = acl.proxy_id;
+
+      if (serviceId) {
+        console.log(`  - ACL ${aclId}: Service access to ${serviceId}`);
+      } else if (proxyId) {
+        console.log(`  - ACL ${aclId}: Proxy access to ${proxyId}`);
+      }
+    }
+
+    return acls;
+  } catch (error) {
+    console.error(error.message);
+    return null;
+  }
+}
+
+/**
+ * Add service access for a proxy user
+ */
+async function addServiceAccess(proxyUserId, serviceId) {
+  try {
+    const payload = {
+      proxy_user_id: proxyUserId,
+      service_id: serviceId
+    };
+
+    const response = await fetch(`${BASE_URL}/user/proxy_user_acl/create`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error adding service access: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+    const aclId = data.created[0];
+    console.log(`Successfully granted access to service ${serviceId}`);
+    return aclId;
+  } catch (error) {
+    console.error(error.message);
+    return null;
+  }
+}
+
+/**
+ * Add proxy access for a proxy user
+ */
+async function addProxyAccess(proxyUserId, proxyId) {
+  try {
+    const payload = {
+      proxy_user_id: proxyUserId,
+      proxy_id: proxyId
+    };
+
+    const response = await fetch(`${BASE_URL}/user/proxy_user_acl/create`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error adding proxy access: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+    const aclId = data.created[0];
+    console.log(`Successfully granted access to proxy ${proxyId}`);
+    return aclId;
+  } catch (error) {
+    console.error(error.message);
+    return null;
+  }
+}
+
+/**
+ * Remove an ACL entry to revoke access
+ */
+async function removeAcl(aclId) {
+  try {
+    const response = await fetch(`${BASE_URL}/user/proxy_user_acl/delete/${aclId}`, {
+      method: 'DELETE',
+      headers: headers
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error removing ACL: ${response.status}, ${errorText}`);
+    }
+
+    console.log(`Successfully removed ACL ${aclId}`);
+    return true;
+  } catch (error) {
+    console.error(error.message);
+    return false;
+  }
+}
+
+/**
+ * Change a proxy user's access type to 'all' (unrestricted)
+ */
+async function changeAccessTypeToAll(proxyUserId) {
+  try {
+    const payload = {
+      proxy_user_access_type: 'all',
+      clear_proxy_user_acl: true
+    };
+
+    const response = await fetch(`${BASE_URL}/user/proxy_user/edit/${proxyUserId}`, {
+      method: 'PATCH',
+      headers: headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error changing access type: ${response.status}, ${errorText}`);
+    }
+
+    console.log(`Successfully changed ${proxyUserId} to unrestricted access`);
+    return true;
+  } catch (error) {
+    console.error(error.message);
+    return false;
+  }
+}
+
+// Example usage
+async function main() {
+  const PROXY_USER_ID = 'seo_team';
+
+  console.log('=== Example 1: View Current ACLs ===');
+  const currentAcls = await searchAcls(PROXY_USER_ID);
+
+  console.log('\n=== Example 2: Add Service Access ===');
+  await addServiceAccess(PROXY_USER_ID, 'API-NEW-SERVICE-001');
+
+  console.log('\n=== Example 3: Add Multiple Services ===');
+  for (const serviceId of ['API-SERVICE-002', 'API-SERVICE-003']) {
+    await addServiceAccess(PROXY_USER_ID, serviceId);
+  }
+
+  console.log('\n=== Example 4: View Updated ACLs ===');
+  const updatedAcls = await searchAcls(PROXY_USER_ID);
+
+  console.log('\n=== Example 5: Remove Specific ACL ===');
+  if (updatedAcls && updatedAcls.length > 0) {
+    const firstAclId = updatedAcls[0].proxy_user_acl_id;
+    await removeAcl(firstAclId);
+  }
+
+  console.log('\n=== Example 6: Change to Unrestricted Access ===');
+  // Uncomment to change to unrestricted access (removes all ACLs)
+  // await changeAccessTypeToAll(PROXY_USER_ID);
+}
+
+main().catch(console.error);
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey,
+    'Content-Type: application/json'
+];
+
+/**
+ * Search for all ACL entries for a specific proxy user
+ */
+function searchAcls($baseUrl, $headers, $proxyUserId) {
+    $url = $baseUrl . '/user/proxy_user_acl/search?' . http_build_query(['proxy_user_id' => $proxyUserId]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        echo "Error searching ACLs: {$httpCode}\n";
+        echo $response . "\n";
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    $acls = $data['data'] ?? [];
+
+    echo "\nFound " . count($acls) . " ACL entries for {$proxyUserId}:\n";
+    foreach ($acls as $acl) {
+        $aclId = $acl['proxy_user_acl_id'];
+        $serviceId = $acl['service_id'] ?? null;
+        $proxyId = $acl['proxy_id'] ?? null;
+
+        if ($serviceId) {
+            echo "  - ACL {$aclId}: Service access to {$serviceId}\n";
+        } elseif ($proxyId) {
+            echo "  - ACL {$aclId}: Proxy access to {$proxyId}\n";
+        }
+    }
+
+    return $acls;
+}
+
+/**
+ * Add service access for a proxy user
+ */
+function addServiceAccess($baseUrl, $headers, $proxyUserId, $serviceId) {
+    $payload = [
+        'proxy_user_id' => $proxyUserId,
+        'service_id' => $serviceId
+    ];
+
+    $ch = curl_init($baseUrl . '/user/proxy_user_acl/create');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 201) {
+        echo "Error adding service access: {$httpCode}\n";
+        echo $response . "\n";
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    $aclId = $data['created'][0];
+    echo "Successfully granted access to service {$serviceId}\n";
+    return $aclId;
+}
+
+/**
+ * Remove an ACL entry to revoke access
+ */
+function removeAcl($baseUrl, $headers, $aclId) {
+    $ch = curl_init($baseUrl . '/user/proxy_user_acl/delete/' . $aclId);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        echo "Error removing ACL: {$httpCode}\n";
+        echo $response . "\n";
+        return false;
+    }
+
+    echo "Successfully removed ACL {$aclId}\n";
+    return true;
+}
+
+// Example usage
+$PROXY_USER_ID = 'seo_team';
+
+echo "=== Example 1: View Current ACLs ===\n";
+$currentAcls = searchAcls($baseUrl, $headers, $PROXY_USER_ID);
+
+echo "\n=== Example 2: Add Service Access ===\n";
+addServiceAccess($baseUrl, $headers, $PROXY_USER_ID, 'API-NEW-SERVICE-001');
+
+echo "\n=== Example 3: View Updated ACLs ===\n";
+$updatedAcls = searchAcls($baseUrl, $headers, $PROXY_USER_ID);
+
+echo "\n=== Example 4: Remove Specific ACL ===\n";
+if ($updatedAcls && count($updatedAcls) > 0) {
+    $firstAclId = $updatedAcls[0]['proxy_user_acl_id'];
+    removeAcl($baseUrl, $headers, $firstAclId);
+}
+?>
+```
+</CodeGroup>
+
+## Common Operations
+
+### 1. View Current Permissions
+
+Search ACLs to see what a proxy user currently has access to:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/search?proxy_user_id=seo_team' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "proxy_user_acl_id": "uuid-1",
+      "proxy_user_id": "seo_team",
+      "service_id": "API-SEO-001",
+      "proxy_user_acl_creation_datetime": "2023-09-28 12:34:56"
+    },
+    {
+      "proxy_user_acl_id": "uuid-2",
+      "proxy_user_id": "seo_team",
+      "service_id": "API-SEO-002",
+      "proxy_user_acl_creation_datetime": "2023-09-29 14:22:10"
+    }
+  ],
+  "message": "Proxy User Acl search successful."
+}
+```
+
+### 2. Grant New Access
+
+Add a new ACL entry to grant access to another service or proxy:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_id": "seo_team",
+    "service_id": "API-NEW-SERVICE"
+  }'
+```
+
+### 3. Revoke Access
+
+Delete an ACL entry to remove access:
+
+```bash
+curl --request DELETE \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/delete/uuid-1' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+### 4. Change from Restricted to Unrestricted
+
+To give a proxy user unrestricted access, change the access type to `"all"` and clear ACLs:
+
+```bash
+curl --request PATCH \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user/edit/seo_team' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_access_type": "all",
+    "clear_proxy_user_acl": true
+  }'
+```
+
+<Warning>
+Setting `clear_proxy_user_acl: true` is **required** when changing to `"all"` if ACLs exist. This ensures all ACL entries are removed.
+</Warning>
+
+## Search Parameters
+
+The ACL search endpoint supports filtering by:
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `proxy_user_id` | Filter by proxy user | `?proxy_user_id=seo_team` |
+| `service_id` | Filter by service | `?service_id=API-SEO-001` |
+| `proxy_id` | Filter by proxy | `?proxy_id=550e8400-e29b-41d4-a716-446655440001` |
+| `page` | Page number | `?page=1` |
+| `per_page` | Results per page | `?per_page=50` |
+
+## Related Documentation
+
+- [Proxy User ACL Object](/api-objects/proxy-user-acl)
+- [Proxy User Access Control Guide](/api-explainers/proxy-user-access-control)
+- [Create Proxy User with Service Access](/api-examples/create-proxy-user-with-service-access)
+- [Create Proxy User with Proxy Access](/api-examples/create-proxy-user-with-proxy-access)

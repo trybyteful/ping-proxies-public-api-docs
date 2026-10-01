@@ -1,0 +1,417 @@
+---
+title: "Generate sticky residential proxies in the US for a specific proxy user"
+description: "Learn how to generate a list of sticky residential proxies in the US for a specific proxy user"
+icon: "users"
+---
+
+This example demonstrates how to generate a list of sticky residential proxies in the US for a specific proxy user using the `/residential/list` endpoint.
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+def get_residential_proxy_list(proxy_user_id):
+    """Generate a list of sticky residential proxies in the US for a specific proxy user."""
+    
+    # Headers for authentication
+    headers = {
+        "X-API-Public-Key": API_PUBLIC_KEY,
+        "X-API-Private-Key": API_PRIVATE_KEY
+    }
+    
+    # Parameters for the residential proxy list
+    params = {
+        "proxy_user_id": proxy_user_id,  # The specific proxy user
+        "country_id": "us",              # United States
+        "list_session_type": "sticky",   # sticky session
+        "list_count": 10,                # Number of proxies to generate
+        "list_format": "socks5h"         # Proxy format
+    }
+    
+    # Make request to the residential list endpoint
+    response = requests.get(
+        f"{BASE_URL}/user/residential/list",
+        params=params,
+        headers=headers
+    )
+    
+    if response.status_code != 200:  # Note: This endpoint returns 200 Created
+        print(f"Error: {response.status_code}")
+        return None
+    
+    # Parse the response
+    data = response.json()
+    
+    # Return the list of proxies
+    return data["data"]
+
+# Example usage
+if __name__ == "__main__":
+    # Replace with your actual proxy user ID
+    proxy_user_id = "your_proxy_user_id"
+    
+    # Get the residential proxy list
+    proxies = get_residential_proxy_list(proxy_user_id)
+    
+    if proxies:
+        print(f"Successfully generated {len(proxies)} US residential proxies for user {proxy_user_id}")
+        print("\nProxies:")
+        for proxy in proxies:
+            print(proxy)
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Generate a list of sticky residential proxies in the US for a specific proxy user
+ * @param {string} proxyUserId - ID of the proxy user
+ * @returns {Promise<Array>} List of residential proxies
+ */
+async function getResidentialProxyList(proxyUserId) {
+  // Set up the request URL with parameters
+  const url = new URL(`${BASE_URL}/user/residential/list`);
+  
+  // Add parameters
+  url.searchParams.append('proxy_user_id', proxyUserId);  // The specific proxy user
+  url.searchParams.append('country_id', 'us');            // United States
+  url.searchParams.append('list_session_type', 'sticky'); // sticky session
+  url.searchParams.append('list_count', '10');            // Number of proxies to generate
+  url.searchParams.append('list_format', 'socks5h');      // Proxy format
+  
+  try {
+    // Make the API request
+    const response = await fetch(url, {
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`HTTP error! Status: ${response.status}`);
+      return null;
+    }
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Return the list of proxies
+    return data.data;
+    
+  } catch (error) {
+    console.error('Error generating residential proxies:', error);
+    return null;
+  }
+}
+
+// Example usage
+async function main() {
+  // Replace with your actual proxy user ID
+  const proxyUserId = 'your_proxy_user_id';
+  
+  // Get the residential proxy list
+  const proxies = await getResidentialProxyList(proxyUserId);
+  
+  if (proxies) {
+    console.log(`Successfully generated ${proxies.length} US residential proxies for user ${proxyUserId}`);
+    console.log('\nProxies:');
+    proxies.forEach(proxy => console.log(proxy));
+  }
+}
+
+main();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Generate a list of sticky residential proxies in the US for a specific proxy user
+ * 
+ * @param string $proxyUserId ID of the proxy user
+ * @return array|null List of residential proxies or null on error
+ */
+function getResidentialProxyList($apiPublicKey, $apiPrivateKey, $baseUrl, $proxyUserId) {
+    // Headers for authentication
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey
+    ];
+    
+    // Build the query parameters
+    $params = [
+        'proxy_user_id' => $proxyUserId,   // The specific proxy user
+        'country_id' => 'us',              // United States
+        'list_session_type' => 'sticky',   // sticky session
+        'list_count' => 10,                // Number of proxies to generate
+        'list_format' => 'socks5h'         // Proxy format
+    ];
+    
+    // Build the URL with query string
+    $url = $baseUrl . '/user/residential/list?' . http_build_query($params);
+    
+    // Initialize cURL session
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    // Execute the request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {  // Note: This endpoint returns 200 Created
+        echo "Error: " . $httpCode . "\n";
+        return null;
+    }
+    
+    // Parse the response
+    $data = json_decode($response, true);
+    
+    // Return the list of proxies
+    return $data['data'];
+}
+
+// Example usage
+// Replace with your actual proxy user ID
+$proxyUserId = 'your_proxy_user_id';
+
+// Get the residential proxy list
+$proxies = getResidentialProxyList($apiPublicKey, $apiPrivateKey, $baseUrl, $proxyUserId);
+
+if ($proxies) {
+    echo "Successfully generated " . count($proxies) . " US residential proxies for user {$proxyUserId}\n";
+    echo "\nProxies:\n";
+    foreach ($proxies as $proxy) {
+        echo $proxy . "\n";
+    }
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// ProxyListResponse is the structure for the API response
+type ProxyListResponse struct {
+	Data    []string `json:"data"`
+	Message string   `json:"message"`
+}
+
+// GetResidentialProxyList generates a list of sticky residential proxies in the US for a specific proxy user
+func GetResidentialProxyList(proxyUserID string) ([]string, error) {
+	// Build the URL with query parameters
+	baseEndpoint := fmt.Sprintf("%s/user/residential/list", baseURL)
+	u, err := url.Parse(baseEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add query parameters
+	q := u.Query()
+	q.Add("proxy_user_id", proxyUserID)       // The specific proxy user
+	q.Add("country_id", "us")                 // United States
+	q.Add("list_session_type", "sticky")      // sticky session
+	q.Add("list_count", "10")                 // Number of proxies to generate
+	q.Add("list_format", "socks5h")           // Proxy format
+	u.RawQuery = q.Encode()
+	
+	// Create a new HTTP client
+	client := &http.Client{}
+	
+	// Create the request
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Add authentication headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	
+	// Execute the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != 201 {  // Note: This endpoint returns 201 Created
+		return nil, fmt.Errorf("error: %d", resp.StatusCode)
+	}
+	
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var listResponse ProxyListResponse
+	err = json.Unmarshal(body, &listResponse)
+	if err != nil {
+		return nil, err
+	}
+	
+	return listResponse.Data, nil
+}
+
+func main() {
+	// Replace with your actual proxy user ID
+	proxyUserID := "your_proxy_user_id"
+	
+	// Get the residential proxy list
+	proxies, err := GetResidentialProxyList(proxyUserID)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	
+	fmt.Printf("Successfully generated %d US residential proxies for user %s\n", len(proxies), proxyUserID)
+	fmt.Println("\nProxies:")
+	for _, proxy := range proxies {
+		fmt.Println(proxy)
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class ResidentialProxyListGenerator {
+
+    // API credentials
+    private sticky final String API_PUBLIC_KEY = "your_public_key";
+    private sticky final String API_PRIVATE_KEY = "your_private_key";
+    private sticky final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private sticky final HttpClient client = HttpClient.newHttpClient();
+    private sticky final ObjectMapper mapper = new ObjectMapper();
+    
+    // Response class
+    sticky class ProxyListResponse {
+        public List<String> data;
+        public String message;
+    }
+    
+    /**
+     * Generate a list of sticky residential proxies in the US for a specific proxy user
+     * @param proxyUserId ID of the proxy user
+     * @return List of residential proxies
+     */
+    public sticky List<String> getResidentialProxyList(String proxyUserId) 
+            throws IOException, InterruptedException {
+        
+        // Encode parameters
+        String encodedProxyUserId = URLEncoder.encode(proxyUserId, StandardCharsets.UTF_8);
+        
+        // Build the URL with query parameters
+        String requestUrl = String.format("%s/user/residential/list?proxy_user_id=%s&country_id=us&list_session_type=sticky&list_count=10&list_format=socks5h",
+            BASE_URL, encodedProxyUserId);
+        
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(requestUrl))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() != 201) {  // Note: This endpoint returns 201 Created
+            throw new IOException("API request failed with status code: " + response.statusCode());
+        }
+        
+        // Parse the response
+        ProxyListResponse listResponse = mapper.readValue(response.body(), ProxyListResponse.class);
+        
+        return listResponse.data;
+    }
+
+    public sticky void main(String[] args) {
+        try {
+            // Replace with your actual proxy user ID
+            String proxyUserId = "your_proxy_user_id";
+            
+            // Get the residential proxy list
+            List<String> proxies = getResidentialProxyList(proxyUserId);
+            
+            System.out.printf("Successfully generated %d US residential proxies for user %s%n", 
+                    proxies.size(), proxyUserId);
+            System.out.println("\nProxies:");
+            for (String proxy : proxies) {
+                System.out.println(proxy);
+            }
+            
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Key Parameters Explained
+
+When generating a residential proxy list for a specific user, you need to specify:
+
+- `proxy_user_id`: The ID of the specific proxy user who will authenticate with these proxies
+- `country_id`: The country code (in this case "us" for United States)
+- `list_session_type`: Set to "sticky" for sticky residential sessions
+- `list_count`: Number of proxies to generate
+- `list_format`: Format of the returned proxies (e.g., "socks5h")
+
+## Expected Output Format
+
+The API will return a list of ready-to-use proxy strings. For example, with `list_format=socks5h`:
+
+```
+socks5h://your_user_c_us_s_ABCDEFGHIJKLMNO:your_password@residential.byteful.com:8000
+socks5h://your_user_c_us_s_PQRSTUVWXYZ1234:your_password@residential.byteful.com:8000
+```
+
+## Important Notes
+
+- Unlike datacenter and ISP proxies, residential proxies are generated on-demand
+- The proxy user must have sufficient residential data allocation
+- Every request for residential proxies consumes a small amount of data
+- Each generated proxy contains location targeting information in its name

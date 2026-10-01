@@ -1,0 +1,144 @@
+---
+title: 'Error Handling'
+description: 'Understanding and handling errors in the Byteful API'
+---
+
+The Byteful API uses standard HTTP status codes and consistent error response formats to help you identify and resolve issues with your API requests.
+
+## Error Response Format
+
+All API errors follow a consistent JSON format:
+
+```json
+{
+  "error": "Error Type",
+  "message": "Human-readable error description",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Error Response Fields
+
+| Field | Description |
+|-------|-------------|
+| `error` | A short string identifying the error type |
+| `message` | A human-readable description of what went wrong |
+| `api_request_id` | A unique identifier for the request that can be used when contacting support |
+
+## HTTP Status Codes
+
+The API uses the following HTTP status codes for error responses:
+
+| Status Code | Error Type | Description |
+|-------------|------------|-------------|
+| 400 | Bad Request | The request was invalid or improperly formatted |
+| 401 | Unauthorized | Authentication credentials were missing or invalid |
+| 403 | Forbidden | Authentication succeeded but you don't have permission |
+| 404 | Not Found | The requested resource doesn't exist |
+| 409 | Conflict | The request conflicts with the current state |
+| 422 | Unprocessable Entity | The request was well-formed but couldn't be processed due to business logic |
+| 429 | Too Many Requests | You've exceeded the rate limit |
+| 500 | Internal Server Error | Something went wrong on our servers |
+
+## Common Error Types
+
+### Authentication Errors (401)
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "API key authentication is required.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Permission Errors (403)
+
+```json
+{
+  "error": "Forbidden",
+  "message": "You don't have permission to access this resource.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Resource Not Found (404)
+
+```json
+{
+  "error": "Not Found",
+  "message": "The requested proxy could not be found.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Validation Errors (400)
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The proxy_user_id field is required.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Conflict Errors (409)
+
+```json
+{
+  "error": "Conflict",
+  "message": "A proxy user with this ID already exists.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Business Logic Errors (422)
+
+```json
+{
+  "error": "Unprocessable",
+  "message": "This service cannot be canceled before the minimum contract period.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Rate Limit Errors (429)
+
+```json
+{
+  "error": "Too Many Requests",
+  "message": "Rate limit exceeded. Please try again in 45 seconds.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+### Server Errors (500)
+
+```json
+{
+  "error": "Internal Server Error",
+  "message": "An unexpected error occurred. Please try again later.",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+## Error Handling Best Practices
+
+### 1. Check HTTP Status Codes
+
+Always check the HTTP status code first to understand the general category of error:
+- 4xx errors indicate client-side issues (your request)
+- 5xx errors indicate server-side issues (our systems)
+
+### 2. Parse Error Messages
+
+Error messages provide specific information about what went wrong. Parse them to:
+- Display to users when appropriate
+- Log for debugging
+- Handle programmatically
+
+### 3. Include Request ID in Support Inquiries
+
+Always include the `api_request_id` when contacting support about an API error. This helps us quickly locate the specific request in our logs.
+
+By following these error handling best practices, you can build robust applications that gracefully manage API errors and provide a better experience for your users.

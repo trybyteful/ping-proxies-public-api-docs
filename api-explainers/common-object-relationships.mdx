@@ -1,0 +1,164 @@
+---
+title: 'Common Object Relationships'
+description: 'Understanding how proxy objects relate to geographic and network entities in the Byteful API'
+---
+
+The Byteful API organizes resources in a hierarchical structure that mirrors the real-world relationships between network and geographic entities. Understanding these relationships is crucial for effectively managing and filtering proxies.
+
+## Geographic Hierarchy
+
+```
+Continent > Country > Subdivision > City
+```
+
+This hierarchical structure allows you to target proxies at different geographic levels:
+
+- **Continent**: The broadest geographic division (e.g., `eu` for Europe)
+- **Country**: Countries within continents (e.g., `fr` for France)
+- **Subdivision**: States, provinces, regions (e.g., `fr-idf` for Île-de-France)
+- **City**: Specific cities (e.g., `paris` with city_id 379657)
+
+## Network Hierarchy
+
+```
+ASN > Subnet > IP Address > Proxy
+```
+
+- **ASN (Autonomous System Number)**: Identifies a network operator like AT&T (ASN 7018)
+- **Subnet**: A range of IP addresses (e.g., `107.225.72.0/22`)
+- **IP Address**: The specific address assigned to a proxy
+- **Proxy**: The actual proxy service with ports and authentication
+
+## How Objects Connect
+
+### Proxy Objects
+
+A proxy object represents a single proxy instance. It connects to both geographic and network hierarchies:
+
+```json
+{
+  "proxy_id": "7a018d34-76c2-4c23-b14d-f7b9a7054e25",
+  "proxy_ip_address": "107.225.73.142",
+  "proxy_http_port": 8080,
+  "proxy_socks5_port": 1080,
+  "proxy_type": "isp",
+  "proxy_protocol": "ipv4",
+  "proxy_status": "in_use",
+  
+  // Network hierarchy connections
+  "asn_id": 7018,
+  "asn_name": "AT&T Enterprises, LLC",
+  "subnet_id": "107.225.72.0/22",
+  
+  // Geographic hierarchy connections
+  "country_id": "us",
+  "country_name": "United States",
+  "subdivision_id": "us-tx",
+  "subdivision_name": "Texas",
+  "city_id": 75202,
+  "city_name": "Dallas",
+  "city_timezone": "America/Chicago",
+  "city_latitude": 32.7767,
+  "city_longitude": -96.797
+}
+```
+
+### Service Objects and Proxies
+
+Services are container objects that group proxies:
+
+```
+Service > Proxies
+```
+
+A service represents a purchased group of proxies, and may contain multiple proxy objects:
+
+```json
+{
+  "service_id": "API-1234-5678",
+  "service_name": "AT&T ISP Proxies [US]",
+  "service_type": "isp",
+  "service_protocol": "ipv4",
+  "service_quantity": 5,
+  "service_status": "active",
+  "country_id": "us",
+  
+  // Service may contain multiple proxies
+  "proxies": [
+    {
+      "proxy_id": "7a018d34-76c2-4c23-b14d-f7b9a7054e25",
+      "proxy_ip_address": "107.225.73.142",
+      // Additional proxy details...
+    },
+    // More proxies...
+  ]
+}
+```
+
+## Residential/Mobile Proxy Generation and Object Relationships
+
+Residential and mobile proxies differ from datacenter and ISP proxies in that they're generated on demand rather than being persistent objects. When generating residential or mobile proxies, you specify geographic and network attributes to target specific types of exit nodes.
+
+### Residential Proxy Example
+
+```bash
+# Generate 5 residential proxies in London, UK
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/residential/list?country_id=gb&city_alias=london&list_count=5' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Response:
+```json
+{
+  "data": [
+    "socks5h://stevejobs_c_gb_city_london_s_DDINPY7TQ0781XEO:apple1984@residential.byteful.com:8000",
+    "socks5h://stevejobs_c_gb_city_london_s_XIINPY7TQ0781XEA:apple1984@residential.byteful.com:8000"
+  ],
+  "message": "Residential list successfully created."
+}
+```
+
+### Mobile Proxy Example
+
+```bash
+# Generate 5 mobile proxies in London, UK
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/mobile/list?country_id=gb&city_alias=london&list_count=5' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Response:
+```json
+{
+  "data": [
+    "socks5h://stevejobs_c_gb_city_london_s_DDINPY7TQ0781XEO:apple1984@mobile.byteful.com:8000",
+    "socks5h://stevejobs_c_gb_city_london_s_XIINPY7TQ0781XEA:apple1984@mobile.byteful.com:8000"
+  ],
+  "message": "Mobile list successfully created."
+}
+```
+
+You can also filter residential and mobile proxies by ASN to target specific network providers.
+
+## Exploring Available Options
+
+To explore the available ASNs, countries, subdivisions, and cities, you can use the corresponding search endpoints:
+
+```bash
+# List all available ASNs
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/asn/search' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# List all cities in a specific country
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/city/search?country_id=gb' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+By understanding these object relationships, you can more effectively utilize the Byteful API to precisely target and manage your proxy infrastructure according to your specific needs.
