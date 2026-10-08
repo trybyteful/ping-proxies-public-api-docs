@@ -1,0 +1,25 @@
+---
+title: 'OS Fingerprinting'
+description: 'How to select the TCP/IP OS fingerprint with datacenter and ISP proxies.'
+---
+
+Our proxy servers run on the Linux operating system, giving them a Linux TCP/IP fingerprint by default. This is also known as a `p0f` fingerprint. We provide the capability to emulate the fingerprint of any other major operating system.
+
+<Info>
+  Beta Warning: TCP/IP Fingerprint Emulation is a beta feature. Features currently in beta are not recommended for production use.
+</Info>
+
+Using this capability can reduce the throughput of your proxies. We suggest not using this feature unless absolutely necessary. If you have not yet solved more common and frequently fingerprinted characteristics such as browser and TLS fingerprints, this feature will not be a silver bullet.
+
+You can specify a desired TCP/IP fingerprint by adding a parameter to your username: `USERNAME_os_{operating_system}`. Supported operating systems are currently:
+
+- `linux`.
+- `windows`.
+- `macos`.
+- `android`.
+- `ios`.
+
+If no fingerprint is used we will default to the normal TCP/IP fingerprint of our proxy servers.
+
+## Dashboard Export
+Our export functionality on the dashboard will allow you to set the desired parameter on the username of the exported proxies. For more information, see the [Exporting Proxies](/general/listing-and-exporting-proxies.mdx) guide.
