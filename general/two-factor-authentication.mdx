@@ -1,0 +1,130 @@
+---
+title: "Two-factor Authentication (2FA)"
+description: "Learn how to protect your account with an authenticator app or email codes"
+---
+
+Two-factor authentication (2FA) asks for a code each time you log in, after your password. A person who steals your password cannot log in without that code.
+
+Byteful supports two methods. One method is on at a time.
+
+| Method | How it works |
+| ------ | ------------ |
+| **Authenticator app** (recommended) | You enter a 6-digit code from an app such as Google Authenticator, 1Password or Authy. The code changes every 30 seconds. |
+| **Email codes** | We send an 8-digit code to your email address each time you log in. |
+
+<Warning>
+2FA applies only when you log in with your email address and password. When you log in with Google, or with another sign-in provider, Byteful does not ask for a 2FA code. To protect those logins, turn on 2-step verification with your sign-in provider, for example in your Google account.
+</Warning>
+
+You manage 2FA on the **Security** tab of **User settings**, in the **Two-step authentication** card.
+
+To open it:
+
+1. Open the workspace switcher popup at the bottom of the sidebar.
+2. Click **User settings**.
+3. Click the **Security** tab.
+
+<img
+  src="/images/general/two-factor-authentication/security-card-off.png"
+  alt="Byteful Two-step Authentication Card"
+/>
+
+## Setting Up an Authenticator App
+
+Setup has three steps. Keep your phone near you before you start.
+
+### Step 1: Confirm your email address
+
+1. In the **Authenticator app** row, click **Set up**.
+2. Click **Send code**. We send an 8-digit code to your email address.
+3. Enter the code, then click **Confirm**.
+
+<img
+  src="/images/general/two-factor-authentication/setup-confirm-email.png"
+  alt="Byteful Confirm Your Email Address"
+/>
+
+### Step 2: Connect your authenticator app
+
+1. Open your authenticator app and add a new account.
+2. Scan the QR code in the dashboard.
+3. Enter the 6-digit code that the app shows, then click **Verify and continue**.
+
+If you cannot scan the QR code, click **Cannot scan it? Enter a key instead**. In your app, choose to enter a setup key, then type the key that the dashboard shows.
+
+<img
+  src="/images/general/two-factor-authentication/setup-connect-app.png"
+  alt="Byteful Connect Your Authenticator App"
+/>
+
+### Step 3: Save your backup code
+
+Your authenticator app is now on. The dashboard shows a backup code. If you lose the device with your authenticator app, the backup code lets you log in once.
+
+1. Click **Copy** or **Download**, and keep the code in a safe place, for example your password manager.
+2. Select **I have saved my backup code**.
+3. Click **Done**.
+
+<img
+  src="/images/general/two-factor-authentication/setup-backup-code.png"
+  alt="Byteful Save Your Backup Code"
+/>
+
+<Warning>
+You see the backup code only once. Save it before you click **Done**.
+</Warning>
+
+The **Authenticator app** row now shows **On**.
+
+<img
+  src="/images/general/two-factor-authentication/security-card-on.png"
+  alt="Byteful Authenticator App On"
+/>
+
+## Turning On Email Codes
+
+1. In the **Email codes** row, click **Turn on**.
+2. We send an 8-digit code to your email address. Enter the code, then click **Confirm**.
+
+The **Email codes** row now shows **On**.
+
+If you turn on the authenticator app later, email codes turn off.
+
+## Logging In With 2FA
+
+Byteful asks for a code only when you log in with your email address and password. A login with Google does not ask for a code.
+
+1. Enter your email address and password as usual.
+2. Enter the code from your authenticator app, or from the email that we send.
+3. Click **Submit code**.
+
+<img
+  src="/images/general/two-factor-authentication/login-code.png"
+  alt="Byteful Two-factor Authentication Login"
+/>
+
+### If You Lose Your Device
+
+1. On the code page, click **Lost your device? Use a backup code**.
+2. Enter your backup code, then click **Submit code**.
+
+The backup code works once. After you use it, the authenticator app turns off and email codes turn on. Set up your authenticator app again to get a new backup code.
+
+## Confirming Changes With 2FA
+
+Some changes, for example a new password, ask for a 2FA code. When you use an authenticator app, choose **Authenticator app** or **Backup code** at the top of the dialog, then enter the code.
+
+<img
+  src="/images/general/two-factor-authentication/confirm-change.png"
+  alt="Byteful Confirm a Change With 2FA"
+/>
+
+## Turning Off 2FA
+
+1. In the row of the method that is on, click **Turn off**.
+2. Click **Disable**.
+3. Enter a code to confirm the change.
+
+<Note>
+An organization can require 2FA from its members. If you turn off 2FA, you cannot log in to those organizations until you turn it on again. See [Requiring Two-factor Authentication](/general/organizations/requiring-two-factor-authentication).
+</Note>

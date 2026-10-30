@@ -1,0 +1,96 @@
+---
+title: 'Live Network Activity'
+description: 'Learn how to use the real-time proxy debugging interface in the Byteful dashboard to monitor and troubleshoot requests as they happen.'
+---
+
+The **Live Network Activity** viewer provides real-time visibility into every proxy request made through your account. It offers detailed metrics, a high-volume log stream, and flexible filtering—all designed to help you troubleshoot, monitor, and optimize traffic as it happens.
+<Frame>
+<iframe
+  className="w-full aspect-video rounded-xl"
+  width="90%"
+  src="https://www.youtube.com/embed/nDe419udmaw"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+/>
+</Frame>
+
+## Why use Live Network Activity?
+
+Historically, proxy debugging has required combing through delayed logs, third-party monitoring tools, and disconnected status systems. The [Live Network Activity viewer](https://dashboard.byteful.com/observability/live) solves this by delivering all traffic-level insight in one place—updated in real time and tied directly to your usage.
+
+This tool is essential for:
+
+- Debugging failed or misrouted proxy requests
+- Monitoring performance of specific hosts or applications
+- Validating user-specific traffic behavior
+- Troubleshooting internal service or network routing issues
+
+## Core Capabilities
+
+### Real-Time Request Monitoring
+
+All proxy requests are streamed live and displayed as they happen. The table updates automatically and reflects:
+
+- Request timestamps
+- Byte counts
+- Duration in milliseconds
+- Target domains
+- Proxy user and proxy ID
+- Network type and IP addresses
+
+You can observe immediate feedback from your requests without needing to reload the page or rely on static exports.
+
+### Internal Error Codes
+
+Due to TLS encryption, we do not display HTTP status codes. Instead, Byteful uses internal error codes that represent issues encountered during the connection or transmission phases.
+
+These may include:
+
+- DNS resolution failures
+- TLS negotiation errors
+- Target unreachable
+- Timeout or socket closure issues
+
+Each error code is accompanied by a user-friendly description. For a complete list, refer to our [Live Network Error Codes documentation](/general/debugging-and-error-codes#common-error-codes-and-troubleshooting).
+
+### Flexible Filtering System
+
+The **Add Filter** menu allows you to combine multiple filters to isolate specific events or troubleshoot traffic segments.
+
+Available filters include:
+
+- Log ID
+- Network
+- Protocol
+- Error Code
+- Bytes
+- Duration
+- Proxy User
+- Client IP Address
+- Proxy ID
+- Proxy IP Address
+- Service ID
+
+Filters support chaining and are dynamically applied, letting you narrow down from thousands of requests to just a few relevant entries in seconds.
+
+## Getting Started
+
+Live Network Activity is available under the **Network Observability** section in your dashboard. It requires no setup—logging is automatic for all proxy requests made through your account.
+
+To start:
+
+1. Go to `Network Observability` → [Live Activity](https://dashboard.byteful.com/observability/live)
+2. Use the filter menu to customize your view
+3. Observe request activity in real time
+
+The viewer is optimized for performance and can handle high request volumes without delay, even in enterprise-scale environments.
+
+## Use Cases
+
+Live Network Activity is especially useful for:
+
+- **Technical debugging** of failed requests or slow responses
+- **Traffic pattern inspection** for monitoring uptime and volume
+- **Operational audits** tied to specific proxy users, networks, or service IDs
+- **Performance monitoring** for latency or timeout detection

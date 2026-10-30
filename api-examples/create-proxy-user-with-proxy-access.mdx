@@ -1,0 +1,474 @@
+---
+title: "Create a proxy user with proxy-restricted access"
+description: "Learn how to create a proxy user with access restricted to specific individual proxies using Proxy User ACLs"
+icon: "shield-halved"
+---
+
+This example demonstrates how to create a proxy user with proxy-restricted access, where the user can only access specific individual proxies. This is ideal for reselling scenarios, dedicated proxy assignments, or maximum security with fine-grained control.
+
+<Info>
+Default Proxy Users cannot have ACL rules applied and have access to all proxies on your account.
+</Info>
+
+## Overview
+
+The process involves two steps:
+1. Create a proxy user with `proxy_user_access_type: "proxy_restricted"`
+2. Create Proxy User ACL entries to grant access to specific individual proxies
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+def create_proxy_restricted_proxy_user(user_id, password, proxy_ids, metadata=None):
+    """
+    Create a proxy user with proxy-restricted access.
+
+    Args:
+        user_id: ID for the proxy user
+        password: Password for the proxy user
+        proxy_ids: List of proxy IDs to grant access to
+        metadata: Optional metadata dictionary
+
+    Returns:
+        Tuple of (proxy_user_data, acl_ids) or (None, None) if failed
+    """
+
+    # Step 1: Create the proxy user with proxy_restricted access type
+    create_user_payload = {
+        "proxy_user_id": user_id,
+        "proxy_user_password": password,
+        "proxy_user_access_type": "proxy_restricted"
+    }
+
+    if metadata:
+        create_user_payload["proxy_user_metadata"] = metadata
+
+    response = requests.post(
+        f"{BASE_URL}/user/proxy_user/create",
+        json=create_user_payload,
+        headers=headers
+    )
+
+    if response.status_code != 201:
+        print(f"Error creating proxy user: {response.status_code}")
+        print(response.text)
+        return None, None
+
+    user_data = response.json()
+    print(f"Successfully created proxy user: {user_id}")
+
+    # Step 2: Create ACL entries for each proxy
+    acl_ids = []
+    for proxy_id in proxy_ids:
+        acl_payload = {
+            "proxy_user_id": user_id,
+            "proxy_id": proxy_id
+        }
+
+        acl_response = requests.post(
+            f"{BASE_URL}/user/proxy_user_acl/create",
+            json=acl_payload,
+            headers=headers
+        )
+
+        if acl_response.status_code != 201:
+            print(f"Error creating ACL for proxy {proxy_id}: {acl_response.status_code}")
+            print(acl_response.text)
+            continue
+
+        acl_data = acl_response.json()
+        acl_id = acl_data["created"][0]
+        acl_ids.append(acl_id)
+        print(f"Granted access to proxy: {proxy_id}")
+
+    return user_data, acl_ids
+
+# Example usage
+if __name__ == "__main__":
+    # Create a reseller customer with access to 3 specific proxies
+    USER_ID = "customer_001"
+    PASSWORD = "securepassword456"
+    PROXY_IDS = [
+        "550e8400-e29b-41d4-a716-446655440001",
+        "550e8400-e29b-41d4-a716-446655440002",
+        "550e8400-e29b-41d4-a716-446655440003"
+    ]
+    METADATA = {
+        "customer_type": "reseller",
+        "plan": "premium",
+        "order_id": "ORD-12345"
+    }
+
+    user_data, acl_ids = create_proxy_restricted_proxy_user(
+        user_id=USER_ID,
+        password=PASSWORD,
+        proxy_ids=PROXY_IDS,
+        metadata=METADATA
+    )
+
+    if user_data:
+        print("\n=== Setup Complete ===")
+        print(f"Proxy User ID: {USER_ID}")
+        print(f"Password: {PASSWORD}")
+        print(f"Access Type: proxy_restricted")
+        print(f"Proxies Granted: {len(PROXY_IDS)}")
+        print(f"ACL Entries Created: {len(acl_ids)}")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Create a proxy user with proxy-restricted access
+ * @param {Object} options - Configuration options
+ * @returns {Promise<Object>} Created user and ACL data
+ */
+async function createProxyRestrictedProxyUser(options) {
+  const { userId, password, proxyIds, metadata } = options;
+
+  const headers = {
+    'X-API-Public-Key': API_PUBLIC_KEY,
+    'X-API-Private-Key': API_PRIVATE_KEY,
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    // Step 1: Create the proxy user with proxy_restricted access type
+    const createUserPayload = {
+      proxy_user_id: userId,
+      proxy_user_password: password,
+      proxy_user_access_type: 'proxy_restricted'
+    };
+
+    if (metadata) {
+      createUserPayload.proxy_user_metadata = metadata;
+    }
+
+    const userResponse = await fetch(`${BASE_URL}/user/proxy_user/create`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(createUserPayload)
+    });
+
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      throw new Error(`Error creating proxy user: ${userResponse.status}, ${errorText}`);
+    }
+
+    const userData = await userResponse.json();
+    console.log(`Successfully created proxy user: ${userId}`);
+
+    // Step 2: Create ACL entries for each proxy
+    const aclIds = [];
+    for (const proxyId of proxyIds) {
+      const aclPayload = {
+        proxy_user_id: userId,
+        proxy_id: proxyId
+      };
+
+      const aclResponse = await fetch(`${BASE_URL}/user/proxy_user_acl/create`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(aclPayload)
+      });
+
+      if (!aclResponse.ok) {
+        const errorText = await aclResponse.text();
+        console.error(`Error creating ACL for proxy ${proxyId}: ${aclResponse.status}, ${errorText}`);
+        continue;
+      }
+
+      const aclData = await aclResponse.json();
+      const aclId = aclData.created[0];
+      aclIds.push(aclId);
+      console.log(`Granted access to proxy: ${proxyId}`);
+    }
+
+    return { userData, aclIds };
+
+  } catch (error) {
+    console.error('Error:', error.message);
+    return null;
+  }
+}
+
+// Example usage
+async function main() {
+  const USER_ID = 'customer_001';
+  const PASSWORD = 'securepassword456';
+  const PROXY_IDS = [
+    '550e8400-e29b-41d4-a716-446655440001',
+    '550e8400-e29b-41d4-a716-446655440002',
+    '550e8400-e29b-41d4-a716-446655440003'
+  ];
+  const METADATA = {
+    customer_type: 'reseller',
+    plan: 'premium',
+    order_id: 'ORD-12345'
+  };
+
+  const result = await createProxyRestrictedProxyUser({
+    userId: USER_ID,
+    password: PASSWORD,
+    proxyIds: PROXY_IDS,
+    metadata: METADATA
+  });
+
+  if (result) {
+    console.log('\n=== Setup Complete ===');
+    console.log(`Proxy User ID: ${USER_ID}`);
+    console.log(`Password: ${PASSWORD}`);
+    console.log(`Access Type: proxy_restricted`);
+    console.log(`Proxies Granted: ${PROXY_IDS.length}`);
+    console.log(`ACL Entries Created: ${result.aclIds.length}`);
+  }
+}
+
+main().catch(console.error);
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Create a proxy user with proxy-restricted access
+ *
+ * @param string $apiPublicKey API public key
+ * @param string $apiPrivateKey API private key
+ * @param string $baseUrl Base API URL
+ * @param string $userId Proxy user ID
+ * @param string $password Proxy user password
+ * @param array $proxyIds Array of proxy IDs to grant access to
+ * @param array|null $metadata Optional metadata
+ * @return array|null Array with userData and aclIds, or null on failure
+ */
+function createProxyRestrictedProxyUser($apiPublicKey, $apiPrivateKey, $baseUrl, $userId, $password, $proxyIds, $metadata = null) {
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey,
+        'Content-Type: application/json'
+    ];
+
+    // Step 1: Create the proxy user with proxy_restricted access type
+    $createUserPayload = [
+        'proxy_user_id' => $userId,
+        'proxy_user_password' => $password,
+        'proxy_user_access_type' => 'proxy_restricted'
+    ];
+
+    if ($metadata !== null) {
+        $createUserPayload['proxy_user_metadata'] = $metadata;
+    }
+
+    $ch = curl_init($baseUrl . '/user/proxy_user/create');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($createUserPayload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $userResponse = curl_exec($ch);
+    $userHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($userHttpCode !== 201) {
+        echo "Error creating proxy user: " . $userHttpCode . "\n";
+        echo $userResponse . "\n";
+        return null;
+    }
+
+    $userData = json_decode($userResponse, true);
+    echo "Successfully created proxy user: {$userId}\n";
+
+    // Step 2: Create ACL entries for each proxy
+    $aclIds = [];
+    foreach ($proxyIds as $proxyId) {
+        $aclPayload = [
+            'proxy_user_id' => $userId,
+            'proxy_id' => $proxyId
+        ];
+
+        $ch = curl_init($baseUrl . '/user/proxy_user_acl/create');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($aclPayload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $aclResponse = curl_exec($ch);
+        $aclHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($aclHttpCode !== 201) {
+            echo "Error creating ACL for proxy {$proxyId}: " . $aclHttpCode . "\n";
+            echo $aclResponse . "\n";
+            continue;
+        }
+
+        $aclData = json_decode($aclResponse, true);
+        $aclId = $aclData['created'][0];
+        $aclIds[] = $aclId;
+        echo "Granted access to proxy: {$proxyId}\n";
+    }
+
+    return ['userData' => $userData, 'aclIds' => $aclIds];
+}
+
+// Example usage
+$USER_ID = 'customer_001';
+$PASSWORD = 'securepassword456';
+$PROXY_IDS = [
+    '550e8400-e29b-41d4-a716-446655440001',
+    '550e8400-e29b-41d4-a716-446655440002',
+    '550e8400-e29b-41d4-a716-446655440003'
+];
+$METADATA = [
+    'customer_type' => 'reseller',
+    'plan' => 'premium',
+    'order_id' => 'ORD-12345'
+];
+
+$result = createProxyRestrictedProxyUser(
+    $apiPublicKey,
+    $apiPrivateKey,
+    $baseUrl,
+    $USER_ID,
+    $PASSWORD,
+    $PROXY_IDS,
+    $METADATA
+);
+
+if ($result) {
+    echo "\n=== Setup Complete ===\n";
+    echo "Proxy User ID: {$USER_ID}\n";
+    echo "Password: {$PASSWORD}\n";
+    echo "Access Type: proxy_restricted\n";
+    echo "Proxies Granted: " . count($PROXY_IDS) . "\n";
+    echo "ACL Entries Created: " . count($result['aclIds']) . "\n";
+}
+?>
+```
+</CodeGroup>
+
+## Key Points
+
+### 1. Access Type Must Be Set
+
+When creating the proxy user, you must set `proxy_user_access_type` to `"proxy_restricted"`:
+
+```json
+{
+  "proxy_user_id": "customer_001",
+  "proxy_user_password": "securepassword456",
+  "proxy_user_access_type": "proxy_restricted"
+}
+```
+
+### 2. ACL Entries Grant Individual Proxy Access
+
+After creating the proxy user, create one ACL entry for each individual proxy they should access:
+
+```json
+{
+  "proxy_user_id": "customer_001",
+  "proxy_id": "550e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+The proxy user can **only** access the specific proxies listed in their ACL entries - nothing more.
+
+### 3. One ACL Per Proxy
+
+Unlike service-restricted access (where one ACL grants access to all proxies in a service), proxy-restricted requires one ACL entry per proxy:
+
+- ACL 1: `customer_001` → Proxy `550e8400-e29b-41d4-a716-446655440001`
+- ACL 2: `customer_001` → Proxy `550e8400-e29b-41d4-a716-446655440002`
+- ACL 3: `customer_001` → Proxy `550e8400-e29b-41d4-a716-446655440003`
+
+## Comparison with Service-Restricted
+
+| Feature | Service-Restricted | Proxy-Restricted |
+|---------|-------------------|------------------|
+| Grants access to | All proxies in a service | Specific individual proxies |
+| ACLs needed | One per service | One per proxy |
+| Best for | Team/department access | Reselling, dedicated assignments |
+| Granularity | Service level | Proxy level |
+| Scalability | Better for large proxy pools | Better for small, specific sets |
+
+## Verifying Access
+
+After setup, you can verify the ACL entries were created:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/search?proxy_user_id=customer_001' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Managing Access
+
+### Adding More Proxies
+
+Create additional ACL entries to grant access to more proxies:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_id": "customer_001",
+    "proxy_id": "550e8400-e29b-41d4-a716-446655440004"
+  }'
+```
+
+### Removing Proxy Access
+
+Delete an ACL entry to revoke access to a specific proxy:
+
+```bash
+curl --request DELETE \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/delete/{proxy_user_acl_id}' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Retrieving Proxy IDs
+
+To get proxy IDs for creating ACLs, use the proxy search endpoint:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?service_id=API-1234-5678' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+Each proxy in the response will have a `proxy_id` field you can use for creating ACL entries.
+
+## Related Documentation
+
+- [Proxy User ACL Object](/api-objects/proxy-user-acl)
+- [Proxy User Access Control Guide](/api-explainers/proxy-user-access-control)
+- [Create Proxy User with Service Access](/api-examples/create-proxy-user-with-service-access)
+- [Manage Proxy User ACLs](/api-examples/manage-proxy-user-acls)

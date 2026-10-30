@@ -1,0 +1,60 @@
+---
+title: 'Rate Limiting'
+description: 'Understanding and working with API rate limits'
+---
+
+<Warning>
+  **Default rate limit: 20 requests per second per customer.** This limit applies to every Public API endpoint unless a different limit is listed under [Endpoint-Specific Limits](#endpoint-specific-limits) below.
+
+  Need it raised? Email [support@byteful.com](mailto:support@byteful.com) with a fair reason for the higher limit.
+</Warning>
+
+To ensure fair usage and system stability, the Byteful API implements rate limiting. This page explains our rate limits and how to work with them effectively.
+
+## Rate Limit Policy
+
+| Scope | Limit |
+|-------|-------|
+| Default (all Public API endpoints) | **20 requests per second** |
+| Applied per | Customer account |
+
+- The limit is counted per customer, not per API key. Every API key on the same customer account shares one limit.
+- All endpoints draw from the same shared limit. For example, 15 proxy search requests and 5 service search requests in the same second together use the full 20.
+- The limit is measured over a rolling one-second window.
+
+Rate limiting helps us:
+- Protect the API from excessive traffic
+- Ensure fair access for all users
+- Maintain reliable service performance
+
+## Endpoint-Specific Limits
+
+These endpoints have limits in addition to the default:
+
+| Endpoint | Limit |
+|----------|-------|
+| [Proxy Tester](/api-explainers/proxy-tester) | A maximum of **5,000** `proxy_test_run` sessions per day |
+
+Every other Public API endpoint uses the default limit of 20 requests per second.
+
+## Rate Limit Exceeded Response
+
+If you exceed the rate limit, you'll receive a `429 Too Many Requests` response with a body like:
+
+```json
+{
+  "error": "Too Many Requests",
+  "message": "20 per 1 second",
+  "api_request_id": "0a5a76aa-e286-477b-b88f-e5b492a0ba70"
+}
+```
+
+When you receive a `429`, wait briefly and retry. Exponential backoff (for example 1s, 2s, then 4s) is recommended. To avoid hitting the limit, spread requests evenly over time instead of sending them in bursts, and limit how many requests your integration runs in parallel.
+
+## Increase Your Rate Limit
+
+<Card title="Need Higher Limits?" icon="bolt" href="mailto:support@byteful.com">
+  We can raise rate limits for individual customers.
+
+  Contact [support@byteful.com](mailto:support@byteful.com) with a fair reason for the increase, such as your use case and the request volume you expect.
+</Card>

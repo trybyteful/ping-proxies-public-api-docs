@@ -1,0 +1,48 @@
+---
+title: 'Using Smartpath®'
+description: 'Learn about Smartpath, its benefits, and how it optimizes your residential proxy usage at Byteful'
+---
+<img
+  src="/images/general/smartpath.png"
+  alt="Byteful Smartpath"
+/>
+
+Smartpath® is an intelligent, AI-driven proxy routing feature designed to optimize your residential proxy data usage by dynamically routing traffic through residential or datacenter IPs. Unlike traditional residential proxies that route all traffic through residential IP addresses, Smartpath intelligently decides which requests genuinely require a residential IP and routes non-essential traffic via more economical datacenter IPs.
+
+## Why use Smartpath?
+
+Smartpath ensures efficient use of your proxy data, significantly reducing costs without sacrificing success rates. It automatically manages proxy routing, simplifying operations, and eliminating the need for manual optimization.
+
+## How Smartpath Optimizes Data Costs
+
+Smartpath utilizes advanced artificial intelligence and real-time data analysis to assess each request. It instantly determines—within under 10 milliseconds—whether a residential IP is necessary, routing non-essential requests through datacenter IPs at no additional cost.
+
+## How to use the Smartpath Beta
+
+Enabling Smartpath can be done with a single click of a button. Simply head over to our [residential proxy generator on the dashboard](https://dashboard.byteful.com/residential) and click Enable in the Smartpath settings area. All proxies generated with this configuration will be assessed by Smartpath and optimized where possible.
+<img
+  src="/images/general/smartpath-generation.png"
+  alt="Byteful Smartpath Generator Settings"
+/>
+You can also create Smartpath enabled proxy lists via the API by passing in the list_smartpath_enabled parameter with a value of `True`.
+
+## When to use Smartpath and when to avoid it?
+
+Smartpath is designed to work across a wide range of targets and use-cases, however, when utilizing AI and applying a solution across hundreds of millions of websites across the internet, there is always the chance of false positives.
+
+You should exercise caution when when using Smartpath in workloads involving ad verification, compliance critical workloads, and on targets which have extremely sensitive fingerprinting.
+
+If you are experiencing poor performance or elevated false positive rates when using Smartpath, don't hesitate to contact our customer support team at support@byteful.com so we can investigate.
+
+<Warning>
+Smartpath requests which are classified as not requiring a residential IP address do not respect sticky IP address session parameters as they're routed through a different datacenter IP address. All requests that are classified as requiring a residential IP address will be routed through the same sticky IP address in the session.
+</Warning>
+
+## Measuring the success of Smartpath
+
+We've integrated Smartpath metrics across our suite of observability tools so you track track exactly what requests were optimized by Smartpath and assess your cost savings over any period. You can filter these analytics by proxy user and domain so you can understand which workloads Smartpath works best for.
+
+<img
+  src="/images/general/smartpath-analytics.png"
+  alt="Byteful Smartpath Analytics"
+/>

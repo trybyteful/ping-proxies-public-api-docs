@@ -1,0 +1,622 @@
+---
+title: "Edit Proxy User Authentication by adding IP Authentication and Changing Password"
+description: "Learn how to modify a proxy user's authentication by adding IP addresses and updating the password with the Byteful API."
+icon: "user-lock"
+---
+
+This example demonstrates how to update a proxy user's authentication settings using the Byteful API. Specifically, we'll show how to:
+
+1. Add IP address authentication to an existing proxy user
+2. Change the proxy user's password
+3. Enable strict security mode
+
+These operations are common when you need to enhance security for your proxy users or update their authentication credentials.
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+def edit_proxy_user_authentication(proxy_user_id, new_password=None, ip_addresses=None, enable_strict_security=None):
+    """
+    Update a proxy user's authentication settings.
+    
+    Args:
+        proxy_user_id: ID of the proxy user to edit
+        new_password: New password for the proxy user (optional)
+        ip_addresses: List of IP addresses to whitelist (optional)
+        enable_strict_security: Boolean to enable/disable strict security (optional)
+        
+    Returns:
+        API response or None if the update failed
+    """
+    # Build the request URL
+    url = f"{BASE_URL}/user/proxy_user/edit/{proxy_user_id}"
+    
+    # Initialize the payload dictionary - we'll only include fields we want to update
+    payload = {}
+    
+    # Add new password if provided
+    if new_password:
+        payload["proxy_user_password"] = new_password
+    
+    # Add IP address authentication if provided
+    if ip_addresses:
+        payload["ip_address_authentications"] = ip_addresses
+    
+    # Set strict security mode if provided
+    if enable_strict_security is not None:
+        payload["proxy_user_is_strict_security"] = enable_strict_security
+    
+    # Make the API request
+    response = requests.patch(url, headers=headers, json=payload)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+# Example usage
+if __name__ == "__main__":
+    # Define parameters
+    PROXY_USER_ID = "marketingteam"  # ID of the proxy user to update
+    NEW_PASSWORD = "SecurePssw0rd123"  # New secure password
+    
+    # List of whitelisted IP addresses for this proxy user
+    IP_ADDRESSES = [
+        "192.168.1.100",  # Office IP address
+        "203.0.113.45"     # Remote worker IP address
+    ]
+    
+    # Enable strict security (requires IP authentication)
+    ENABLE_STRICT_SECURITY = True
+    
+    # Update the proxy user
+    result = edit_proxy_user_authentication(
+        proxy_user_id=PROXY_USER_ID,
+        new_password=NEW_PASSWORD,
+        ip_addresses=IP_ADDRESSES,
+        enable_strict_security=ENABLE_STRICT_SECURITY
+    )
+    
+    if result:
+        print("Proxy user authentication updated successfully")
+        print(f"Edited proxy user: {result['edited'][0]}")
+    else:
+        print("Failed to update proxy user authentication")
+
+# Note: You can modify this function to update other proxy user settings:
+# - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+# - proxy_user_metadata: Customer metadata for organization and tracking
+# - proxy_user_residential_bytes_limit: Set data limits for residential proxies
+# - proxy_user_mobile_bytes_limit: Set data limits for mobile proxies
+# For access control, use the Proxy User ACL endpoints to manage service/proxy access
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Update a proxy user's authentication settings
+ * @param {Object} options - Authentication update options
+ * @returns {Promise<Object>} Response from the API
+ */
+async function editProxyUserAuthentication(options) {
+  const {
+    proxyUserId,
+    newPassword,
+    ipAddresses,
+    enableStrictSecurity
+  } = options;
+  
+  // Build the request URL
+  const url = `${BASE_URL}/user/proxy_user/edit/${proxyUserId}`;
+  
+  // Initialize the payload object - only include fields we want to update
+  const payload = {};
+  
+  // Add new password if provided
+  if (newPassword) {
+    payload.proxy_user_password = newPassword;
+  }
+  
+  // Add IP address authentication if provided
+  if (ipAddresses && Array.isArray(ipAddresses)) {
+    payload.ip_address_authentications = ipAddresses;
+  }
+  
+  // Set strict security mode if provided
+  if (enableStrictSecurity !== undefined) {
+    payload.proxy_user_is_strict_security = enableStrictSecurity;
+  }
+  
+  try {
+    // Make the API request
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Check if the request was successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}, Details: ${JSON.stringify(data)}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error updating proxy user authentication:', error);
+    throw error;
+  }
+}
+
+// Example usage
+async function main() {
+  // Define parameters
+  const PROXY_USER_ID = 'marketingteam';  // ID of the proxy user to update
+  const NEW_PASSWORD = 'SecurePssw0rd123';  // New secure password
+  
+  // List of whitelisted IP addresses for this proxy user
+  const IP_ADDRESSES = [
+    '192.168.1.100',  // Office IP address
+    '203.0.113.45'    // Remote worker IP address
+  ];
+  
+  // Enable strict security (requires IP authentication)
+  const ENABLE_STRICT_SECURITY = true;
+  
+  try {
+    // Update the proxy user
+    const result = await editProxyUserAuthentication({
+      proxyUserId: PROXY_USER_ID,
+      newPassword: NEW_PASSWORD,
+      ipAddresses: IP_ADDRESSES,
+      enableStrictSecurity: ENABLE_STRICT_SECURITY
+    });
+    
+    console.log('Proxy user authentication updated successfully');
+    console.log(`Edited proxy user: ${result.edited[0]}`);
+  } catch (error) {
+    console.error('Failed to update proxy user authentication:', error);
+  }
+}
+
+main();
+
+// Note: You can extend this function to update other proxy user settings:
+// - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+// - proxy_user_metadata: Customer metadata for organization and tracking
+// - proxy_user_residential_bytes_limit: Set data limits for residential proxies
+// - proxy_user_mobile_bytes_limit: Set data limits for mobile proxies
+// For access control, use the Proxy User ACL endpoints to manage service/proxy access
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Update a proxy user's authentication settings
+ * 
+ * @param string $proxyUserId ID of the proxy user to edit
+ * @param string|null $newPassword New password for the proxy user (optional)
+ * @param array|null $ipAddresses List of IP addresses to whitelist (optional)
+ * @param bool|null $enableStrictSecurity Boolean to enable/disable strict security (optional)
+ * @return array|null API response or null if the update failed
+ */
+function editProxyUserAuthentication($apiPublicKey, $apiPrivateKey, $baseUrl, $proxyUserId, $newPassword = null, $ipAddresses = null, $enableStrictSecurity = null) {
+    // Build the request URL
+    $url = "{$baseUrl}/user/proxy_user/edit/{$proxyUserId}";
+    
+    // Initialize the payload array - only include fields we want to update
+    $payload = [];
+    
+    // Add new password if provided
+    if ($newPassword !== null) {
+        $payload['proxy_user_password'] = $newPassword;
+    }
+    
+    // Add IP address authentication if provided
+    if ($ipAddresses !== null) {
+        $payload['ip_address_authentications'] = $ipAddresses;
+    }
+    
+    // Set strict security mode if provided
+    if ($enableStrictSecurity !== null) {
+        $payload['proxy_user_is_strict_security'] = $enableStrictSecurity;
+    }
+    
+    // Set up cURL request
+    $ch = curl_init($url);
+    
+    // Set request headers
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey,
+        'Content-Type: application/json'
+    ];
+    
+    // Configure cURL options
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    // Execute the request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    // Close cURL handle
+    curl_close($ch);
+    
+    // Check if the request was successful
+    if ($httpCode === 200) {
+        return json_decode($response, true);
+    } else {
+        echo "Error: {$httpCode}\n";
+        echo $response . "\n";
+        return null;
+    }
+}
+
+// Example usage
+
+// Define parameters
+$PROXY_USER_ID = 'marketingteam';  // ID of the proxy user to update
+$NEW_PASSWORD = 'SecurePssw0rd123';  // New secure password
+
+// List of whitelisted IP addresses for this proxy user
+$IP_ADDRESSES = [
+    '192.168.1.100',  // Office IP address
+    '203.0.113.45'    // Remote worker IP address
+];
+
+// Enable strict security (requires IP authentication)
+$ENABLE_STRICT_SECURITY = true;
+
+// Update the proxy user
+$result = editProxyUserAuthentication(
+    $apiPublicKey,
+    $apiPrivateKey,
+    $baseUrl,
+    $PROXY_USER_ID,
+    $NEW_PASSWORD,
+    $IP_ADDRESSES,
+    $ENABLE_STRICT_SECURITY
+);
+
+if ($result) {
+    echo "Proxy user authentication updated successfully\n";
+    echo "Edited proxy user: {$result['edited'][0]}\n";
+} else {
+    echo "Failed to update proxy user authentication\n";
+}
+
+// Note: You can modify this function to update other proxy user settings:
+// - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+// - proxy_user_metadata: Customer metadata for organization and tracking
+// - proxy_user_residential_bytes_limit: Set data limits for residential proxies
+// - proxy_user_mobile_bytes_limit: Set data limits for mobile proxies
+// For access control, use the Proxy User ACL endpoints to manage service/proxy access
+?>
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+// API credentials
+const (
+	APIPublicKey  = "your_public_key"
+	APIPrivateKey = "your_private_key"
+	BaseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// EditProxyUserResponse represents the API response structure
+type EditProxyUserResponse struct {
+	Edited  []string `json:"edited"`
+	Message string   `json:"message"`
+}
+
+// EditProxyUserParams contains parameters for editing a proxy user
+type EditProxyUserParams struct {
+	ProxyUserPassword      *string   `json:"proxy_user_password,omitempty"`
+	IPAddressAuthentications []string  `json:"ip_address_authentications,omitempty"`
+	ProxyUserIsStrictSecurity *bool     `json:"proxy_user_is_strict_security,omitempty"`
+}
+
+// EditProxyUserAuthentication updates a proxy user's authentication settings
+func EditProxyUserAuthentication(proxyUserID string, params EditProxyUserParams) (*EditProxyUserResponse, error) {
+	// Build the request URL
+	url := fmt.Sprintf("%s/user/proxy_user/edit/%s", BaseURL, proxyUserID)
+	
+	// Marshal the payload to JSON
+	payloadBytes, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling payload: %v", err)
+	}
+	
+	// Create the HTTP request
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
+	
+	// Add request headers
+	req.Header.Add("X-API-Public-Key", APIPublicKey)
+	req.Header.Add("X-API-Private-Key", APIPrivateKey)
+	req.Header.Add("Content-Type", "application/json")
+	
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
+	
+	// Check for successful response
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API error: %d, details: %s", resp.StatusCode, string(body))
+	}
+	
+	// Parse the response
+	var response EditProxyUserResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing response: %v", err)
+	}
+	
+	return &response, nil
+}
+
+func main() {
+	// Define parameters
+	proxyUserID := "marketingteam"  // ID of the proxy user to update
+	newPassword := "SecurePssw0rd123"  // New secure password
+	
+	// List of whitelisted IP addresses for this proxy user
+	ipAddresses := []string{
+		"192.168.1.100",  // Office IP address
+		"203.0.113.45",   // Remote worker IP address
+	}
+	
+	// Enable strict security (requires IP authentication)
+	enableStrictSecurity := true
+	
+	// Create the parameters struct
+	params := EditProxyUserParams{
+		ProxyUserPassword:        &newPassword,
+		IPAddressAuthentications: ipAddresses,
+		ProxyUserIsStrictSecurity: &enableStrictSecurity,
+	}
+	
+	// Update the proxy user
+	result, err := EditProxyUserAuthentication(proxyUserID, params)
+	if err != nil {
+		fmt.Printf("Failed to update proxy user authentication: %v\n", err)
+		return
+	}
+	
+	// Handle the successful response
+	fmt.Println("Proxy user authentication updated successfully")
+	fmt.Printf("Edited proxy user: %s\n", result.Edited[0])
+	
+	// Note: You can modify this function to update other proxy user settings:
+	// - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+	// - proxy_user_metadata: Customer metadata for organization and tracking
+	// - proxy_user_residential_bytes_limit: Set data limits for residential proxies
+// - proxy_user_mobile_bytes_limit: Set data limits for mobile proxies
+	// For access control, use the Proxy User ACL endpoints to manage service/proxy access
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class EditProxyUserAuthentication {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Request payload class (only include non-null fields in JSON)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    static class EditProxyUserParams {
+        @JsonProperty("proxy_user_password")
+        public String proxyUserPassword;
+        
+        @JsonProperty("ip_address_authentications")
+        public List<String> ipAddressAuthentications;
+        
+        @JsonProperty("proxy_user_is_strict_security")
+        public Boolean proxyUserIsStrictSecurity;
+    }
+    
+    // Response class for API
+    static class EditProxyUserResponse {
+        public List<String> edited;
+        public String message;
+    }
+    
+    /**
+     * Updates a proxy user's authentication settings
+     * 
+     * @param proxyUserId ID of the proxy user to edit
+     * @param newPassword New password for the proxy user (optional)
+     * @param ipAddresses List of IP addresses to whitelist (optional)
+     * @param enableStrictSecurity Boolean to enable/disable strict security (optional)
+     * @return API response or null if the update failed
+     */
+    public static EditProxyUserResponse editProxyUserAuthentication(
+            String proxyUserId, 
+            String newPassword, 
+            List<String> ipAddresses, 
+            Boolean enableStrictSecurity) throws IOException, InterruptedException {
+        
+        // Build the request URL
+        String url = BASE_URL + "/user/proxy_user/edit/" + proxyUserId;
+        
+        // Initialize the payload object - only include fields we want to update
+        EditProxyUserParams params = new EditProxyUserParams();
+        
+        // Add new password if provided
+        if (newPassword != null) {
+            params.proxyUserPassword = newPassword;
+        }
+        
+        // Add IP address authentication if provided
+        if (ipAddresses != null) {
+            params.ipAddressAuthentications = ipAddresses;
+        }
+        
+        // Set strict security mode if provided
+        if (enableStrictSecurity != null) {
+            params.proxyUserIsStrictSecurity = enableStrictSecurity;
+        }
+        
+        // Convert params to JSON
+        String jsonPayload = mapper.writeValueAsString(params);
+        
+        // Create the HTTP request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Check for successful response
+        if (response.statusCode() != 200) {
+            throw new IOException("API error: " + response.statusCode() + ", details: " + response.body());
+        }
+        
+        // Parse the response
+        return mapper.readValue(response.body(), EditProxyUserResponse.class);
+    }
+    
+    public static void main(String[] args) {
+        try {
+            // Define parameters
+            String PROXY_USER_ID = "marketingteam";  // ID of the proxy user to update
+            String NEW_PASSWORD = "SecurePssw0rd123";  // New secure password
+            
+            // List of whitelisted IP addresses for this proxy user
+            List<String> IP_ADDRESSES = List.of(
+                "192.168.1.100",  // Office IP address
+                "203.0.113.45"    // Remote worker IP address
+            );
+            
+            // Enable strict security (requires IP authentication)
+            Boolean ENABLE_STRICT_SECURITY = true;
+            
+            // Update the proxy user
+            EditProxyUserResponse result = editProxyUserAuthentication(
+                PROXY_USER_ID,
+                NEW_PASSWORD,
+                IP_ADDRESSES,
+                ENABLE_STRICT_SECURITY
+            );
+            
+            // Handle the successful response
+            System.out.println("Proxy user authentication updated successfully");
+            System.out.println("Edited proxy user: " + result.edited.get(0));
+            
+        } catch (Exception e) {
+            System.out.println("Failed to update proxy user authentication: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // Note: You can modify this function to update other proxy user settings:
+        // - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+        // - proxy_user_metadata: Customer metadata for organization and tracking
+        // - proxy_user_residential_bytes_limit: Set data limits for residential proxies
+// - proxy_user_mobile_bytes_limit: Set data limits for mobile proxies
+        // For access control, use the Proxy User ACL endpoints to manage service/proxy access
+    }
+}
+```
+</CodeGroup>
+
+## Key Concepts
+
+### IP Address Authentication
+
+IP address authentication restricts proxy access to specific IP addresses.
+
+When adding IP addresses, specify all addresses that should have access. Any previous whitelist will be replaced.
+
+### Strict Security Mode
+
+Enabling strict security mode (`proxy_user_is_strict_security = true`) requires IP authentication to be used. This means:
+
+- Username/password authentication alone is no longer sufficient
+- Connections must come from a whitelisted IP address and have the correct username/password
+- If enabled without IP addresses, the proxy user will not be able to authenticate
+
+### Password Updates
+
+When updating passwords, ensure they meet these requirements:
+
+- Between 10-32 characters
+- Alphanumeric characters
+- Consider using a strong, unique password for each proxy user

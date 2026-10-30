@@ -1,0 +1,634 @@
+---
+title: "Create a proxy user with metadata and residential data limits"
+description: "Learn how to create a proxy user with custom metadata and residential data allocation"
+icon: "user-plus"
+---
+
+This example demonstrates how to create a proxy user with custom metadata and a residential data limit. This is useful for organizing proxy users by department, tracking usage, and managing data allocation.
+
+<Note>
+This example creates a proxy user with **unrestricted access** to all your proxies. For restricted access to specific services or proxies, see:
+- [Create Proxy User with Service-Restricted Access](/api-examples/create-proxy-user-with-service-access)
+- [Create Proxy User with Proxy-Restricted Access](/api-examples/create-proxy-user-with-proxy-access)
+</Note>
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+def create_proxy_user(user_id, password, data_limit_gb, metadata):
+    """
+    Create a proxy user with metadata and data limits.
+
+    Args:
+        user_id: ID for the proxy user
+        password: Password for the proxy user
+        data_limit_gb: Residential data limit in GB
+        metadata: Dictionary of metadata key-value pairs
+
+    Returns:
+        Created proxy user details or None if creation failed
+    """
+    # Convert GB to bytes
+    data_limit_bytes = data_limit_gb * 1024 * 1024 * 1024
+
+    # Create the request payload
+    payload = {
+        "proxy_user_id": user_id,
+        "proxy_user_password": password,
+        "proxy_user_residential_bytes_limit": data_limit_bytes,
+        "proxy_user_metadata": metadata
+    }
+
+    # Make request to create the proxy user
+    response = requests.post(
+        f"{BASE_URL}/user/proxy_user/create",
+        json=payload,
+        headers=headers
+    )
+
+    if response.status_code != 201:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+    data = response.json()
+    print(f"Successfully created proxy user: {user_id}")
+    return data
+
+# Example usage
+if __name__ == "__main__":
+    # Define parameters
+    USER_ID = "seo_department"
+    PASSWORD = "strongpassword123"
+    BANDWIDTH_LIMIT_GB = 10
+
+    # Custom metadata for organization
+    METADATA = {
+        "department": "SEO",
+        "team_lead": "Jane Smith",
+        "created_by": "api",
+        "purpose": "keyword_research",
+        "cost_center": "MKTG-001"
+    }
+
+    # Create the proxy user
+    result = create_proxy_user(
+        user_id=USER_ID,
+        password=PASSWORD,
+        data_limit_gb=BANDWIDTH_LIMIT_GB,
+        metadata=METADATA
+    )
+
+    if result:
+        print("\nProxy User Details:")
+        print(f"  ID: {result['data']['proxy_user_id']}")
+        print(f"  Password: {result['data']['proxy_user_password']}")
+        print(f"  Access Type: all (unrestricted)")
+        print(f"  Data Limit: {BANDWIDTH_LIMIT_GB}GB")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Create a proxy user with metadata and data limits
+ * @param {Object} options - Proxy user options
+ * @returns {Promise<Object>} Created proxy user details
+ */
+async function createProxyUser(options) {
+  const {
+    userId,
+    password,
+    dataLimitGb,
+    metadata
+  } = options;
+
+  // Convert GB to bytes
+  const dataLimitBytes = dataLimitGb * 1024 * 1024 * 1024;
+
+  // Create the request payload
+  const payload = {
+    proxy_user_id: userId,
+    proxy_user_password: password,
+    proxy_user_residential_bytes_limit: dataLimitBytes,
+    proxy_user_metadata: metadata
+  };
+
+  try {
+    const response = await fetch(`${BASE_URL}/user/proxy_user/create`, {
+      method: 'POST',
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`Successfully created proxy user: ${userId}`);
+    return data;
+
+  } catch (error) {
+    console.error('Error creating proxy user:', error);
+    return null;
+  }
+}
+
+// Example usage
+async function main() {
+  // Define parameters
+  const USER_ID = 'seo_department';
+  const PASSWORD = 'strongpassword123';
+  const BANDWIDTH_LIMIT_GB = 10;
+
+  // Custom metadata for organization
+  const METADATA = {
+    department: 'SEO',
+    team_lead: 'Jane Smith',
+    created_by: 'api',
+    purpose: 'keyword_research',
+    cost_center: 'MKTG-001'
+  };
+
+  // Create the proxy user
+  const result = await createProxyUser({
+    userId: USER_ID,
+    password: PASSWORD,
+    dataLimitGb: BANDWIDTH_LIMIT_GB,
+    metadata: METADATA
+  });
+
+  if (result) {
+    console.log('\nProxy User Details:');
+    console.log(`  ID: ${result.data.proxy_user_id}`);
+    console.log(`  Password: ${result.data.proxy_user_password}`);
+    console.log(`  Access Type: all (unrestricted)`);
+    console.log(`  Data Limit: ${BANDWIDTH_LIMIT_GB}GB`);
+  }
+}
+
+main().catch(console.error);
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Create a proxy user with metadata and data limits
+ *
+ * @param string $apiPublicKey API public key
+ * @param string $apiPrivateKey API private key
+ * @param string $baseUrl Base API URL
+ * @param string $userId Proxy user ID
+ * @param string $password Proxy user password
+ * @param int $dataLimitGb Data limit in GB
+ * @param array $metadata Metadata array
+ * @return array|null Created proxy user details or null if creation failed
+ */
+function createProxyUser($apiPublicKey, $apiPrivateKey, $baseUrl, $userId, $password, $dataLimitGb, $metadata) {
+    // Convert GB to bytes
+    $dataLimitBytes = $dataLimitGb * 1024 * 1024 * 1024;
+
+    // Headers for authentication
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey,
+        'Content-Type: application/json'
+    ];
+
+    // Create the request payload
+    $payload = [
+        'proxy_user_id' => $userId,
+        'proxy_user_password' => $password,
+        'proxy_user_residential_bytes_limit' => $dataLimitBytes,
+        'proxy_user_metadata' => $metadata
+    ];
+
+    // Make request to create the proxy user
+    $ch = curl_init($baseUrl . '/user/proxy_user/create');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 201) {
+        echo "Error: " . $httpCode . "\n";
+        echo $response . "\n";
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    echo "Successfully created proxy user: {$userId}\n";
+    return $data;
+}
+
+// Example usage
+
+// Define parameters
+$USER_ID = 'seo_department';
+$PASSWORD = 'strongpassword123';
+$BANDWIDTH_LIMIT_GB = 10;
+
+// Custom metadata for organization
+$METADATA = [
+    'department' => 'SEO',
+    'team_lead' => 'Jane Smith',
+    'created_by' => 'api',
+    'purpose' => 'keyword_research',
+    'cost_center' => 'MKTG-001'
+];
+
+// Create the proxy user
+$result = createProxyUser(
+    $apiPublicKey,
+    $apiPrivateKey,
+    $baseUrl,
+    $USER_ID,
+    $PASSWORD,
+    $BANDWIDTH_LIMIT_GB,
+    $METADATA
+);
+
+if ($result) {
+    echo "\nProxy User Details:\n";
+    echo "  ID: " . $result['data']['proxy_user_id'] . "\n";
+    echo "  Password: " . $result['data']['proxy_user_password'] . "\n";
+    echo "  Access Type: all (unrestricted)\n";
+    echo "  Data Limit: {$BANDWIDTH_LIMIT_GB}GB\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// CreateProxyUserResponse represents the API response structure
+type CreateProxyUserResponse struct {
+	Created []string    `json:"created"`
+	Data    ProxyUser   `json:"data"`
+	Message string      `json:"message"`
+}
+
+// ProxyUser represents the proxy user data returned by the API
+type ProxyUser struct {
+	ProxyUserID       string `json:"proxy_user_id"`
+	ProxyUserPassword string `json:"proxy_user_password"`
+}
+
+// ProxyUserMetadata represents the metadata for the proxy user
+type ProxyUserMetadata struct {
+	Department string `json:"department"`
+	TeamLead   string `json:"team_lead"`
+	CreatedBy  string `json:"created_by"`
+	Purpose    string `json:"purpose"`
+	CostCenter string `json:"cost_center"`
+}
+
+// CreateProxyUserRequest represents the request payload
+type CreateProxyUserRequest struct {
+	ProxyUserID                   string            `json:"proxy_user_id"`
+	ProxyUserPassword             string            `json:"proxy_user_password"`
+	ProxyUserResidentialBytesLimit int64             `json:"proxy_user_residential_bytes_limit"`
+	ProxyUserMetadata             ProxyUserMetadata `json:"proxy_user_metadata"`
+}
+
+// CreateProxyUser creates a proxy user with metadata and data limits
+func CreateProxyUser(userID, password string, dataLimitGB int64, metadata ProxyUserMetadata) (*CreateProxyUserResponse, error) {
+	// Convert GB to bytes
+	dataLimitBytes := dataLimitGB * 1024 * 1024 * 1024
+
+	// Create the request payload
+	payload := CreateProxyUserRequest{
+		ProxyUserID:                   userID,
+		ProxyUserPassword:             password,
+		ProxyUserResidentialBytesLimit: dataLimitBytes,
+		ProxyUserMetadata:             metadata,
+	}
+
+	// Convert payload to JSON
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new request
+	req, err := http.NewRequest("POST", baseURL+"/user/proxy_user/create", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	// Add headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check response code
+	if resp.StatusCode != 201 {
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error: %d, details: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	// Parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var createResponse CreateProxyUserResponse
+	err = json.Unmarshal(body, &createResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Successfully created proxy user: %s\n", userID)
+	return &createResponse, nil
+}
+
+func main() {
+	// Define parameters
+	userID := "seo_department"
+	password := "strongpassword123"
+	dataLimitGB := int64(10)
+
+	// Custom metadata for organization
+	metadata := ProxyUserMetadata{
+		Department: "SEO",
+		TeamLead:   "Jane Smith",
+		CreatedBy:  "api",
+		Purpose:    "keyword_research",
+		CostCenter: "MKTG-001",
+	}
+
+	// Create the proxy user
+	result, err := CreateProxyUser(userID, password, dataLimitGB, metadata)
+	if err != nil {
+		fmt.Printf("Error creating proxy user: %v\n", err)
+		return
+	}
+
+	if result != nil {
+		fmt.Println("\nProxy User Details:")
+		fmt.Printf("  ID: %s\n", result.Data.ProxyUserID)
+		fmt.Printf("  Password: %s\n", result.Data.ProxyUserPassword)
+		fmt.Printf("  Access Type: all (unrestricted)\n")
+		fmt.Printf("  Data Limit: %dGB\n", dataLimitGB)
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class CreateProxyUser {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    // Response classes
+    static class CreateProxyUserResponse {
+        public List<String> created;
+        public ProxyUserData data;
+        public String message;
+    }
+
+    static class ProxyUserData {
+        @JsonProperty("proxy_user_id")
+        public String proxyUserId;
+
+        @JsonProperty("proxy_user_password")
+        public String proxyUserPassword;
+    }
+
+    /**
+     * Create a proxy user with metadata and data limits
+     * @param userId ID for the proxy user
+     * @param password Password for the proxy user
+     * @param dataLimitGb Data limit in GB
+     * @param metadata Metadata map
+     * @return Created proxy user details
+     */
+    public static CreateProxyUserResponse createProxyUser(
+            String userId, String password, long dataLimitGb,
+            Map<String, String> metadata) throws IOException, InterruptedException {
+
+        // Convert GB to bytes
+        long dataLimitBytes = dataLimitGb * 1024 * 1024 * 1024;
+
+        // Create the request payload
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("proxy_user_id", userId);
+        payload.put("proxy_user_password", password);
+        payload.put("proxy_user_residential_bytes_limit", dataLimitBytes);
+        payload.put("proxy_user_metadata", metadata);
+
+        // Convert payload to JSON
+        String jsonPayload = mapper.writeValueAsString(payload);
+
+        // Create the request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/user/proxy_user/create"))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
+
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 201) {
+            throw new IOException("API request failed with status code: " + response.statusCode() +
+                                 ", details: " + response.body());
+        }
+
+        // Parse the response
+        CreateProxyUserResponse createResponse = mapper.readValue(response.body(), CreateProxyUserResponse.class);
+
+        System.out.printf("Successfully created proxy user: %s%n", userId);
+        return createResponse;
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Define parameters
+            String userId = "seo_department";
+            String password = "strongpassword123";
+            long dataLimitGB = 10;
+
+            // Custom metadata for organization
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("department", "SEO");
+            metadata.put("team_lead", "Jane Smith");
+            metadata.put("created_by", "api");
+            metadata.put("purpose", "keyword_research");
+            metadata.put("cost_center", "MKTG-001");
+
+            // Create the proxy user
+            CreateProxyUserResponse result = createProxyUser(userId, password, dataLimitGB, metadata);
+
+            if (result != null) {
+                System.out.println("\nProxy User Details:");
+                System.out.printf("  ID: %s%n", result.data.proxyUserId);
+                System.out.printf("  Password: %s%n", result.data.proxyUserPassword);
+                System.out.printf("  Access Type: all (unrestricted)%n");
+                System.out.printf("  Data Limit: %dGB%n", dataLimitGB);
+            }
+        } catch (Exception e) {
+            System.out.println("Error creating proxy user: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Key Features Explained
+
+### 1. Custom Metadata
+
+Metadata allows you to store custom information with each proxy user for organization and tracking:
+
+```json
+"proxy_user_metadata": {
+  "department": "SEO",
+  "team_lead": "Jane Smith",
+  "created_by": "api",
+  "purpose": "keyword_research",
+  "cost_center": "MKTG-001"
+}
+```
+
+**Metadata constraints:**
+- Flat JSON object (no nested objects)
+- Maximum 30 keys
+- Each value ≤ 300 characters
+- Total size ≤ 32KB
+- Supports string, boolean, float, and integer values
+
+### 2. Data Limits
+
+Set residential data limits in bytes. The example uses 10GB:
+
+```
+10GB = 10 × 1024 × 1024 × 1024 bytes = 10,737,418,240 bytes
+```
+
+This limit applies only to residential proxy usage through this proxy user.
+
+### 3. Unrestricted Access
+
+By default (when `proxy_user_access_type` is not specified or set to `"all"`), the proxy user has unrestricted access to all proxies in your account.
+
+## Access Control Options
+
+If you need to restrict which proxies this user can access, see these guides:
+
+| Access Type | Description | Guide |
+|-------------|-------------|-------|
+| **Service-Restricted** | Limit access to specific services | [Create with Service Access](/api-examples/create-proxy-user-with-service-access) |
+| **Proxy-Restricted** | Limit access to specific individual proxies | [Create with Proxy Access](/api-examples/create-proxy-user-with-proxy-access) |
+
+## Common Use Cases
+
+### Department Organization
+
+Create proxy users for different teams with custom metadata:
+
+- **SEO Team**: Track keyword research usage
+- **Marketing Team**: Monitor ad verification activities
+- **Research Team**: Measure data collection data
+
+### Customer Data Management
+
+Assign data limits based on customer plans:
+
+- **Basic Plan**: 5GB limit
+- **Pro Plan**: 25GB limit
+- **Enterprise Plan**: 100GB+ limit
+
+### Cost Center Tracking
+
+Use metadata to track usage by cost center or project for billing:
+
+```json
+{
+  "cost_center": "MKTG-001",
+  "project": "Q1-Campaign",
+  "budget_code": "FY2024-DIGITAL"
+}
+```
+
+## Related Documentation
+
+- [Proxy User Object](/api-objects/proxy-user)
+- [Proxy User Access Control](/api-explainers/proxy-user-access-control)
+- [Create Proxy User with Service Access](/api-examples/create-proxy-user-with-service-access)
+- [Edit Proxy User Metadata](/api-examples/edit-proxy-user-metadata)

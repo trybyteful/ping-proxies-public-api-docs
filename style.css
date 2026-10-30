@@ -1,0 +1,22 @@
+body img:not(#navbar *) {
+    border-radius: 16px;
+  }
+
+.code-tag {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 500;
+    font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.code-tag.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.code-tag.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
