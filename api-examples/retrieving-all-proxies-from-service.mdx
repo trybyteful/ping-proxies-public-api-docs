@@ -1,0 +1,588 @@
+---
+title: "Get all static proxies from a particular service"
+description: "Learn how to retrieve all proxies associated with a specific service ID using the search endpoint"
+icon: "server"
+---
+
+This example demonstrates how to retrieve all proxies that belong to a specific service using the `/proxy/search` endpoint with a service ID filter.
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+def get_proxies_by_service_id(service_id):
+    """
+    Retrieve all proxies associated with a specific service ID.
+    
+    Args:
+        service_id: The unique identifier of the service
+        
+    Returns:
+        List of proxy objects belonging to the service
+    """
+    # Set up the parameters for the search
+    params = {
+        "service_id": service_id,
+        "per_page": 100  # Adjust as needed
+    }
+    
+    # Make request to the proxy search endpoint
+    response = requests.get(
+        f"{BASE_URL}/user/proxy/search",
+        params=params,
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return []
+    
+    data = response.json()
+    
+    print(f"Successfully retrieved {len(data['data'])} proxies for service {service_id}")
+    return data['data']
+
+def display_proxy_summary(proxies):
+    """Display a summary of the retrieved proxies."""
+    if not proxies:
+        print("No proxies found for this service.")
+        return
+    
+    # Group proxies by type
+    proxy_types = {}
+    countries = {}
+    
+    for proxy in proxies:
+        proxy_type = proxy.get('proxy_type', 'unknown')
+        country = proxy.get('country_id', 'unknown')
+        
+        proxy_types[proxy_type] = proxy_types.get(proxy_type, 0) + 1
+        countries[country] = countries.get(country, 0) + 1
+    
+    print("\nProxy Types:")
+    for ptype, count in proxy_types.items():
+        print(f"  {ptype}: {count}")
+    
+    print("\nCountry Distribution:")
+    for country, count in countries.items():
+        print(f"  {country}: {count}")
+    
+    # Print sample proxy details
+    print("\nSample Proxy Details:")
+    sample = proxies[0]
+    print(f"  ID: {sample.get('proxy_id')}")
+    print(f"  IP Address: {sample.get('proxy_ip_address')}")
+    print(f"  Type: {sample.get('proxy_type')}")
+    print(f"  Protocol: {sample.get('proxy_protocol')}")
+    print(f"  HTTP Port: {sample.get('proxy_http_port')}")
+    print(f"  SOCKS5 Port: {sample.get('proxy_socks5_port')}")
+    print(f"  Location: {sample.get('city_name')}, {sample.get('country_name')}")
+    print(f"  ASN: {sample.get('asn_name')} (ASN {sample.get('asn_id')})")
+
+# Example usage
+if __name__ == "__main__":
+    # Replace with your actual service ID
+    SERVICE_ID = "API-1234-5678"
+    
+    proxies = get_proxies_by_service_id(SERVICE_ID)
+    display_proxy_summary(proxies)
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Retrieve all proxies associated with a specific service ID
+ * @param {string} serviceId - The unique identifier of the service
+ * @returns {Promise<Array>} List of proxy objects belonging to the service
+ */
+async function getProxiesByServiceId(serviceId) {
+  // Set up the parameters for the search
+  const url = new URL(`${BASE_URL}/user/proxy/search`);
+  url.searchParams.append('service_id', serviceId);
+  url.searchParams.append('per_page', '100'); // Adjust as needed
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    console.log(`Successfully retrieved ${data.data.length} proxies for service ${serviceId}`);
+    return data.data;
+    
+  } catch (error) {
+    console.error('Error retrieving proxies:', error);
+    return [];
+  }
+}
+
+/**
+ * Display a summary of the retrieved proxies
+ * @param {Array} proxies - List of proxy objects
+ */
+function displayProxySummary(proxies) {
+  if (!proxies || proxies.length === 0) {
+    console.log('No proxies found for this service.');
+    return;
+  }
+  
+  // Group proxies by type
+  const proxyTypes = {};
+  const countries = {};
+  
+  proxies.forEach(proxy => {
+    const proxyType = proxy.proxy_type || 'unknown';
+    const country = proxy.country_id || 'unknown';
+    
+    proxyTypes[proxyType] = (proxyTypes[proxyType] || 0) + 1;
+    countries[country] = (countries[country] || 0) + 1;
+  });
+  
+  console.log('\nProxy Types:');
+  Object.entries(proxyTypes).forEach(([type, count]) => {
+    console.log(`  ${type}: ${count}`);
+  });
+  
+  console.log('\nCountry Distribution:');
+  Object.entries(countries).forEach(([country, count]) => {
+    console.log(`  ${country}: ${count}`);
+  });
+  
+  // Print sample proxy details
+  console.log('\nSample Proxy Details:');
+  const sample = proxies[0];
+  console.log(`  ID: ${sample.proxy_id}`);
+  console.log(`  IP Address: ${sample.proxy_ip_address}`);
+  console.log(`  Type: ${sample.proxy_type}`);
+  console.log(`  Protocol: ${sample.proxy_protocol}`);
+  console.log(`  HTTP Port: ${sample.proxy_http_port}`);
+  console.log(`  SOCKS5 Port: ${sample.proxy_socks5_port}`);
+  console.log(`  Location: ${sample.city_name}, ${sample.country_name}`);
+  console.log(`  ASN: ${sample.asn_name} (ASN ${sample.asn_id})`);
+}
+
+// Example usage
+async function main() {
+  // Replace with your actual service ID
+  const SERVICE_ID = 'API-1234-5678';
+  
+  const proxies = await getProxiesByServiceId(SERVICE_ID);
+  displayProxySummary(proxies);
+}
+
+main().catch(console.error);
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Retrieve all proxies associated with a specific service ID
+ * 
+ * @param string $serviceId The unique identifier of the service
+ * @return array List of proxy objects belonging to the service
+ */
+function getProxiesByServiceId($apiPublicKey, $apiPrivateKey, $baseUrl, $serviceId) {
+    // Headers for authentication
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey
+    ];
+    
+    // Build the URL with parameters
+    $url = $baseUrl . '/user/proxy/search?service_id=' . urlencode($serviceId) . '&per_page=100';
+    
+    // Make request to the proxy search endpoint
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        echo "Error: " . $httpCode . "\n";
+        echo $response . "\n";
+        return [];
+    }
+    
+    $data = json_decode($response, true);
+    
+    echo "Successfully retrieved " . count($data['data']) . " proxies for service {$serviceId}\n";
+    return $data['data'];
+}
+
+/**
+ * Display a summary of the retrieved proxies
+ * 
+ * @param array $proxies List of proxy objects
+ */
+function displayProxySummary($proxies) {
+    if (empty($proxies)) {
+        echo "No proxies found for this service.\n";
+        return;
+    }
+    
+    // Group proxies by type
+    $proxyTypes = [];
+    $countries = [];
+    
+    foreach ($proxies as $proxy) {
+        $proxyType = $proxy['proxy_type'] ?? 'unknown';
+        $country = $proxy['country_id'] ?? 'unknown';
+        
+        if (!isset($proxyTypes[$proxyType])) {
+            $proxyTypes[$proxyType] = 0;
+        }
+        $proxyTypes[$proxyType]++;
+        
+        if (!isset($countries[$country])) {
+            $countries[$country] = 0;
+        }
+        $countries[$country]++;
+    }
+    
+    echo "\nProxy Types:\n";
+    foreach ($proxyTypes as $type => $count) {
+        echo "  {$type}: {$count}\n";
+    }
+    
+    echo "\nCountry Distribution:\n";
+    foreach ($countries as $country => $count) {
+        echo "  {$country}: {$count}\n";
+    }
+    
+    // Print sample proxy details
+    echo "\nSample Proxy Details:\n";
+    $sample = $proxies[0];
+    echo "  ID: " . ($sample['proxy_id'] ?? 'N/A') . "\n";
+    echo "  IP Address: " . ($sample['proxy_ip_address'] ?? 'N/A') . "\n";
+    echo "  Type: " . ($sample['proxy_type'] ?? 'N/A') . "\n";
+    echo "  Protocol: " . ($sample['proxy_protocol'] ?? 'N/A') . "\n";
+    echo "  HTTP Port: " . ($sample['proxy_http_port'] ?? 'N/A') . "\n";
+    echo "  SOCKS5 Port: " . ($sample['proxy_socks5_port'] ?? 'N/A') . "\n";
+    echo "  Location: " . ($sample['city_name'] ?? 'N/A') . ", " . ($sample['country_name'] ?? 'N/A') . "\n";
+    echo "  ASN: " . ($sample['asn_name'] ?? 'N/A') . " (ASN " . ($sample['asn_id'] ?? 'N/A') . ")\n";
+}
+
+// Example usage
+// Replace with your actual service ID
+$serviceId = 'API-1234-5678';
+
+$proxies = getProxiesByServiceId($apiPublicKey, $apiPrivateKey, $baseUrl, $serviceId);
+displayProxySummary($proxies);
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// SearchResponse holds the structure of the API search response
+type SearchResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+// GetProxiesByServiceId retrieves all proxies associated with a specific service ID
+func GetProxiesByServiceId(serviceId string) ([]map[string]interface{}, error) {
+	// Build the URL with query parameters
+	requestURL := fmt.Sprintf("%s/user/proxy/search?service_id=%s&per_page=100", baseURL, url.QueryEscape(serviceId))
+	
+	// Create a new request
+	req, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add authentication headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("error: %d", resp.StatusCode)
+	}
+
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var searchResponse SearchResponse
+	err = json.Unmarshal(body, &searchResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Successfully retrieved %d proxies for service %s\n", len(searchResponse.Data), serviceId)
+	return searchResponse.Data, nil
+}
+
+// DisplayProxySummary shows a summary of the retrieved proxies
+func DisplayProxySummary(proxies []map[string]interface{}) {
+	if len(proxies) == 0 {
+		fmt.Println("No proxies found for this service.")
+		return
+	}
+
+	// Group proxies by type
+	proxyTypes := make(map[string]int)
+	countries := make(map[string]int)
+
+	for _, proxy := range proxies {
+		proxyType, _ := proxy["proxy_type"].(string)
+		if proxyType == "" {
+			proxyType = "unknown"
+		}
+
+		country, _ := proxy["country_id"].(string)
+		if country == "" {
+			country = "unknown"
+		}
+
+		proxyTypes[proxyType]++
+		countries[country]++
+	}
+
+	fmt.Println("\nProxy Types:")
+	for ptype, count := range proxyTypes {
+		fmt.Printf("  %s: %d\n", ptype, count)
+	}
+
+	fmt.Println("\nCountry Distribution:")
+	for country, count := range countries {
+		fmt.Printf("  %s: %d\n", country, count)
+	}
+
+	// Print sample proxy details
+	fmt.Println("\nSample Proxy Details:")
+	sample := proxies[0]
+	
+	fmt.Printf("  ID: %v\n", sample["proxy_id"])
+	fmt.Printf("  IP Address: %v\n", sample["proxy_ip_address"])
+	fmt.Printf("  Type: %v\n", sample["proxy_type"])
+	fmt.Printf("  Protocol: %v\n", sample["proxy_protocol"])
+	fmt.Printf("  HTTP Port: %v\n", sample["proxy_http_port"])
+	fmt.Printf("  SOCKS5 Port: %v\n", sample["proxy_socks5_port"])
+	fmt.Printf("  Location: %v, %v\n", sample["city_name"], sample["country_name"])
+	fmt.Printf("  ASN: %v (ASN %v)\n", sample["asn_name"], sample["asn_id"])
+}
+
+func main() {
+	// Replace with your actual service ID
+	serviceId := "API-1234-5678"
+
+	proxies, err := GetProxiesByServiceId(serviceId)
+	if err != nil {
+		fmt.Printf("Error retrieving proxies: %v\n", err)
+		return
+	}
+
+	DisplayProxySummary(proxies)
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class GetProxiesByServiceId {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Response class to hold API data
+    static class SearchResponse {
+        public List<Map<String, Object>> data;
+        
+        @JsonProperty("item_count")
+        public int itemCount;
+        
+        public String message;
+        
+        public int page;
+        
+        @JsonProperty("per_page")
+        public int perPage;
+        
+        @JsonProperty("total_count")
+        public int totalCount;
+    }
+    
+    /**
+     * Retrieve all proxies associated with a specific service ID
+     * @param serviceId The unique identifier of the service
+     * @return List of proxy objects belonging to the service
+     */
+    public static List<Map<String, Object>> getProxiesByServiceId(String serviceId) 
+            throws IOException, InterruptedException {
+        
+        // Build the URL with proper encoding
+        String encodedServiceId = URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+        String requestUrl = String.format("%s/user/proxy/search?service_id=%s&per_page=100", 
+                BASE_URL, encodedServiceId);
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(requestUrl))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() != 200) {
+            throw new IOException("API request failed with status code: " + response.statusCode());
+        }
+        
+        SearchResponse searchResponse = mapper.readValue(response.body(), SearchResponse.class);
+        
+        System.out.printf("Successfully retrieved %d proxies for service %s%n", 
+                searchResponse.data.size(), serviceId);
+        
+        return searchResponse.data;
+    }
+    
+    /**
+     * Display a summary of the retrieved proxies
+     * @param proxies List of proxy objects
+     */
+    public static void displayProxySummary(List<Map<String, Object>> proxies) {
+        if (proxies.isEmpty()) {
+            System.out.println("No proxies found for this service.");
+            return;
+        }
+        
+        // Group proxies by type
+        Map<String, Integer> proxyTypes = new HashMap<>();
+        Map<String, Integer> countries = new HashMap<>();
+        
+        for (Map<String, Object> proxy : proxies) {
+            String proxyType = (String) proxy.getOrDefault("proxy_type", "unknown");
+            String country = (String) proxy.getOrDefault("country_id", "unknown");
+            
+            proxyTypes.put(proxyType, proxyTypes.getOrDefault(proxyType, 0) + 1);
+            countries.put(country, countries.getOrDefault(country, 0) + 1);
+        }
+        
+        System.out.println("\nProxy Types:");
+        for (Map.Entry<String, Integer> entry : proxyTypes.entrySet()) {
+            System.out.printf("  %s: %d%n", entry.getKey(), entry.getValue());
+        }
+        
+        System.out.println("\nCountry Distribution:");
+        for (Map.Entry<String, Integer> entry : countries.entrySet()) {
+            System.out.printf("  %s: %d%n", entry.getKey(), entry.getValue());
+        }
+        
+        // Print sample proxy details
+        System.out.println("\nSample Proxy Details:");
+        Map<String, Object> sample = proxies.get(0);
+        System.out.printf("  ID: %s%n", sample.getOrDefault("proxy_id", "N/A"));
+        System.out.printf("  IP Address: %s%n", sample.getOrDefault("proxy_ip_address", "N/A"));
+        System.out.printf("  Type: %s%n", sample.getOrDefault("proxy_type", "N/A"));
+        System.out.printf("  Protocol: %s%n", sample.getOrDefault("proxy_protocol", "N/A"));
+        System.out.printf("  HTTP Port: %s%n", sample.getOrDefault("proxy_http_port", "N/A"));
+        System.out.printf("  SOCKS5 Port: %s%n", sample.getOrDefault("proxy_socks5_port", "N/A"));
+        System.out.printf("  Location: %s, %s%n", 
+                sample.getOrDefault("city_name", "N/A"), 
+                sample.getOrDefault("country_name", "N/A"));
+        System.out.printf("  ASN: %s (ASN %s)%n", 
+                sample.getOrDefault("asn_name", "N/A"), 
+                sample.getOrDefault("asn_id", "N/A"));
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Replace with your actual service ID
+            String serviceId = "API-1234-5678";
+            
+            List<Map<String, Object>> proxies = getProxiesByServiceId(serviceId);
+            displayProxySummary(proxies);
+            
+        } catch (Exception e) {
+            System.out.println("Error retrieving proxies: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Key Concepts
+
+1. **Service-based Filtering**: The search endpoint supports filtering proxies by service ID.
+2. **Multiple Formats**: You can retrieve proxies in various formats depending on your needs.
+3. **Full Proxy Details**: The returned data includes all proxy attributes, including ports, protocols, and location information.

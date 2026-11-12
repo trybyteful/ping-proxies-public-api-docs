@@ -1,0 +1,543 @@
+---
+title: "Edit Proxy User Metadata"
+description: "Learn how to update metadata and other settings for an existing proxy user using the Byteful API"
+icon: "pen-to-square"
+---
+
+# Updating Proxy User Metadata
+
+This example demonstrates how to edit an existing proxy user's metadata using the Byteful API. Metadata is a flexible way to store custom information with your proxy users, which can be useful for organizing, tracking, and managing your proxy infrastructure.
+
+## Use Cases for Metadata
+
+- **Organization**: Tag proxy users by department, project, or team
+- **Tracking**: Store reference IDs from your internal systems
+- **Usage**: Track purpose, permissions, or usage limits
+- **Custom Properties**: Store any information that's relevant to your workflow
+
+<CodeGroup>
+```python Python
+import requests
+import json
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+def update_proxy_user_metadata(proxy_user_id, metadata):
+    """
+    Update the metadata for an existing proxy user.
+    
+    Args:
+        proxy_user_id: ID of the proxy user to edit
+        metadata: Dictionary containing metadata key-value pairs
+        
+    Returns:
+        API response or None if the update failed
+    """
+    # Build the request URL
+    url = f"{BASE_URL}/user/proxy_user/edit/{proxy_user_id}"
+    
+    # Create the payload with only the metadata field
+    payload = {
+        "proxy_user_metadata": metadata
+    }
+    
+    # Make the API request
+    response = requests.patch(url, headers=headers, json=payload)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+# Example usage
+if __name__ == "__main__":
+    # Define parameters
+    PROXY_USER_ID = "seoteamuser"
+    
+    # Define metadata to update
+    metadata = {
+        "department": "SEO",
+        "project": "Competitor Analysis",
+        "manager": "Jane Smith",
+        "cost_center": "MKTG-123",
+        "usage_priority": "high",
+        "notes": "Updated for Q2 campaign"
+    }
+    
+    # Update the proxy user metadata
+    result = update_proxy_user_metadata(PROXY_USER_ID, metadata)
+    
+    if result:
+        print("Proxy user metadata updated successfully")
+        print(f"Edited proxy user: {result['edited'][0]}")
+    else:
+        print("Failed to update proxy user metadata")
+
+# Note: You can also update other fields at the same time as metadata:
+# - proxy_user_password: Update the password
+# - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+# - proxy_user_is_strict_security: Enable strict security
+# - ip_address_authentications: List of allowed IP addresses
+# - proxy_user_residential_bytes_limit: Set residential data limits
+# - proxy_user_mobile_bytes_limit: Set mobile data limits
+# For access control, use the Proxy User ACL endpoints to manage service/proxy access
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Update the metadata for an existing proxy user
+ * @param {Object} options - Update options
+ * @returns {Promise<Object>} Response from the API
+ */
+async function updateProxyUserMetadata(options) {
+  const {
+    proxyUserId,
+    metadata
+  } = options;
+  
+  // Build the request URL
+  const url = `${BASE_URL}/user/proxy_user/edit/${proxyUserId}`;
+  
+  // Create the payload with only the metadata field
+  const payload = {
+    proxy_user_metadata: metadata
+  };
+  
+  try {
+    // Make the API request
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'X-API-Public-Key': API_PUBLIC_KEY,
+        'X-API-Private-Key': API_PRIVATE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Check if the request was successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}, Details: ${JSON.stringify(data)}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error updating proxy user metadata:', error);
+    throw error;
+  }
+}
+
+// Example usage
+async function main() {
+  // Define parameters
+  const PROXY_USER_ID = 'seoteamuser';
+  
+  // Define metadata to update
+  const metadata = {
+    department: 'SEO',
+    project: 'Competitor Analysis',
+    manager: 'Jane Smith',
+    cost_center: 'MKTG-123',
+    usage_priority: 'high',
+    notes: 'Updated for Q2 campaign'
+  };
+  
+  try {
+    // Update the proxy user metadata
+    const result = await updateProxyUserMetadata({
+      proxyUserId: PROXY_USER_ID,
+      metadata: metadata
+    });
+    
+    console.log('Proxy user metadata updated successfully');
+    console.log(`Edited proxy user: ${result.edited[0]}`);
+  } catch (error) {
+    console.error('Failed to update proxy user metadata:', error);
+  }
+}
+
+main();
+
+// Note: You can also update other fields at the same time as metadata:
+// - proxy_user_password: Update the password
+// - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+// - proxy_user_is_strict_security: Enable strict security
+// - ip_address_authentications: List of allowed IP addresses
+// - proxy_user_residential_bytes_limit: Set residential data limits
+// - proxy_user_mobile_bytes_limit: Set mobile data limits
+// For access control, use the Proxy User ACL endpoints to manage service/proxy access
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Update the metadata for an existing proxy user
+ * 
+ * @param string $proxyUserId ID of the proxy user to edit
+ * @param array $metadata Associative array containing metadata key-value pairs
+ * @return array|null API response or null if the update failed
+ */
+function updateProxyUserMetadata($apiPublicKey, $apiPrivateKey, $baseUrl, $proxyUserId, $metadata) {
+    // Build the request URL
+    $url = "{$baseUrl}/user/proxy_user/edit/{$proxyUserId}";
+    
+    // Create the payload with only the metadata field
+    $payload = [
+        'proxy_user_metadata' => $metadata
+    ];
+    
+    // Set up cURL request
+    $ch = curl_init($url);
+    
+    // Set request headers
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey,
+        'Content-Type: application/json'
+    ];
+    
+    // Configure cURL options
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    // Execute the request
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    // Close cURL handle
+    curl_close($ch);
+    
+    // Check if the request was successful
+    if ($httpCode === 200) {
+        return json_decode($response, true);
+    } else {
+        echo "Error: {$httpCode}\n";
+        echo $response . "\n";
+        return null;
+    }
+}
+
+// Example usage
+
+// Define parameters
+$PROXY_USER_ID = 'seoteamuser';
+
+// Define metadata to update
+$metadata = [
+    'department' => 'SEO',
+    'project' => 'Competitor Analysis',
+    'manager' => 'Jane Smith',
+    'cost_center' => 'MKTG-123',
+    'usage_priority' => 'high',
+    'notes' => 'Updated for Q2 campaign'
+];
+
+// Update the proxy user metadata
+$result = updateProxyUserMetadata(
+    $apiPublicKey,
+    $apiPrivateKey,
+    $baseUrl,
+    $PROXY_USER_ID,
+    $metadata
+);
+
+if ($result) {
+    echo "Proxy user metadata updated successfully\n";
+    echo "Edited proxy user: {$result['edited'][0]}\n";
+} else {
+    echo "Failed to update proxy user metadata\n";
+}
+
+// Note: You can also update other fields at the same time as metadata:
+// - proxy_user_password: Update the password
+// - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+// - proxy_user_is_strict_security: Enable strict security
+// - ip_address_authentications: List of allowed IP addresses
+// - proxy_user_residential_bytes_limit: Set residential data limits
+// - proxy_user_mobile_bytes_limit: Set mobile data limits
+// For access control, use the Proxy User ACL endpoints to manage service/proxy access
+?>
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+// API credentials
+const (
+	APIPublicKey  = "your_public_key"
+	APIPrivateKey = "your_private_key"
+	BaseURL       = "https://api.byteful.com/1.0/public"
+)
+
+// EditProxyUserResponse represents the API response structure
+type EditProxyUserResponse struct {
+	Edited  []string `json:"edited"`
+	Message string   `json:"message"`
+}
+
+// UpdateProxyUserMetadata updates the metadata for an existing proxy user
+func UpdateProxyUserMetadata(proxyUserID string, metadata map[string]interface{}) (*EditProxyUserResponse, error) {
+	// Build the request URL
+	url := fmt.Sprintf("%s/user/proxy_user/edit/%s", BaseURL, proxyUserID)
+	
+	// Create the payload with only the metadata field
+	payload := map[string]interface{}{
+		"proxy_user_metadata": metadata,
+	}
+	
+	// Marshal the payload to JSON
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling payload: %v", err)
+	}
+	
+	// Create the HTTP request
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
+	
+	// Add request headers
+	req.Header.Add("X-API-Public-Key", APIPublicKey)
+	req.Header.Add("X-API-Private-Key", APIPrivateKey)
+	req.Header.Add("Content-Type", "application/json")
+	
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
+	
+	// Check for successful response
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API error: %d, details: %s", resp.StatusCode, string(body))
+	}
+	
+	// Parse the response
+	var response EditProxyUserResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing response: %v", err)
+	}
+	
+	return &response, nil
+}
+
+func main() {
+	// Define parameters
+	proxyUserID := "seoteamuser"
+	
+	// Define metadata to update
+	metadata := map[string]interface{}{
+		"department":     "SEO",
+		"project":        "Competitor Analysis",
+		"manager":        "Jane Smith",
+		"cost_center":    "MKTG-123",
+		"usage_priority": "high",
+		"notes":          "Updated for Q2 campaign",
+	}
+	
+	// Update the proxy user metadata
+	result, err := UpdateProxyUserMetadata(proxyUserID, metadata)
+	if err != nil {
+		fmt.Printf("Failed to update proxy user metadata: %v\n", err)
+		return
+	}
+	
+	// Handle the successful response
+	fmt.Println("Proxy user metadata updated successfully")
+	fmt.Printf("Edited proxy user: %s\n", result.Edited[0])
+	
+	// Note: You can also update other fields at the same time as metadata:
+	// - proxy_user_password: Update the password
+	// - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+	// - proxy_user_is_strict_security: Enable strict security
+	// - ip_address_authentications: List of allowed IP addresses
+	// - proxy_user_residential_bytes_limit: Set residential data limits
+// - proxy_user_mobile_bytes_limit: Set mobile data limits
+	// For access control, use the Proxy User ACL endpoints to manage service/proxy access
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class UpdateProxyUserMetadata {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Request payload class (only include non-null fields in JSON)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    static class EditProxyUserParams {
+        @JsonProperty("proxy_user_metadata")
+        public Map<String, Object> proxyUserMetadata;
+    }
+    
+    // Response class for API
+    static class EditProxyUserResponse {
+        public List<String> edited;
+        public String message;
+    }
+    
+    /**
+     * Updates the metadata for an existing proxy user
+     * 
+     * @param proxyUserId ID of the proxy user to edit
+     * @param metadata Map containing metadata key-value pairs
+     * @return API response or null if the update failed
+     */
+    public static EditProxyUserResponse updateProxyUserMetadata(
+            String proxyUserId,
+            Map<String, Object> metadata) throws IOException, InterruptedException {
+        
+        // Build the request URL
+        String url = BASE_URL + "/user/proxy_user/edit/" + proxyUserId;
+        
+        // Initialize the payload object with only the metadata field
+        EditProxyUserParams params = new EditProxyUserParams();
+        params.proxyUserMetadata = metadata;
+        
+        // Convert params to JSON
+        String jsonPayload = mapper.writeValueAsString(params);
+        
+        // Create the HTTP request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
+        
+        // Execute the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Check for successful response
+        if (response.statusCode() != 200) {
+            throw new IOException("API error: " + response.statusCode() + ", details: " + response.body());
+        }
+        
+        // Parse the response
+        return mapper.readValue(response.body(), EditProxyUserResponse.class);
+    }
+    
+    public static void main(String[] args) {
+        try {
+            // Define parameters
+            String PROXY_USER_ID = "seoteamuser";
+            
+            // Define metadata to update
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("department", "SEO");
+            metadata.put("project", "Competitor Analysis");
+            metadata.put("manager", "Jane Smith");
+            metadata.put("cost_center", "MKTG-123");
+            metadata.put("usage_priority", "high");
+            metadata.put("notes", "Updated for Q2 campaign");
+            
+            // Update the proxy user metadata
+            EditProxyUserResponse result = updateProxyUserMetadata(PROXY_USER_ID, metadata);
+            
+            // Handle the successful response
+            System.out.println("Proxy user metadata updated successfully");
+            System.out.println("Edited proxy user: " + result.edited.get(0));
+            
+        } catch (Exception e) {
+            System.out.println("Failed to update proxy user metadata: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // Note: You can also update other fields at the same time as metadata:
+        // - proxy_user_password: Update the password
+        // - proxy_user_access_type: Change access control type ("all", "service_restricted", "proxy_restricted")
+        // - proxy_user_is_strict_security: Enable strict security
+        // - ip_address_authentications: List of allowed IP addresses
+        // - proxy_user_residential_bytes_limit: Set residential data limits
+// - proxy_user_mobile_bytes_limit: Set mobile data limits
+        // For access control, use the Proxy User ACL endpoints to manage service/proxy access
+    }
+}
+```
+</CodeGroup>
+
+## Metadata Fields Explained
+
+When updating proxy user metadata, keep these constraints in mind:
+
+- **Structure**: Metadata must be a flat JSON object (no nested objects)
+- **Size**: Maximum 30 keys per metadata object
+- **Value length**: Each value's string representation must be ≤ 300 characters
+- **Total size**: The entire metadata object must be ≤ 32KB
+- **Supported value types**: String, boolean, float, and integer values
+
+## Sample Response
+
+```json
+{
+  "edited": [
+    "seoteamuser"
+  ],
+  "message": "Proxy User successfully edited."
+}
+```

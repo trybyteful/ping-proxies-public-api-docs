@@ -1,0 +1,1043 @@
+---
+title: 'Code Examples'
+description: 'Code examples of how to use Byteful services using Python'
+---
+
+To help customers with debugging, Byteful provides TCP and UDP servers for testing proxy connectivity.
+
+- https://http-ip.tools.byteful.com. Responds to any HTTP request with your IP address.
+- tcp-echo.tools.byteful.com:40000. Accepts TCP connections and returns any bytes received.
+- udp-echo.tools.byteful.com:50000. Accepts UDP datagrams and  returns any bytes received.
+- udp-ip.tools.byteful.com:50001. Accepts UDP datagrams and returns your IP address.
+
+In our examples we use these servers as our end targets. Feel free to use them in your own code for testing your proxies.
+
+<Note>
+We try to showcase different libraries and methods for proxying. If an example uses a different library to the one you are using, check the other examples.
+
+ - Python examples rely on implicit behaviours of modules to execute different proxying methods.
+ - Rust examples are more explicit and show exactly how the mechanisms of proxying work.
+</Note>
+
+## SOCKS5
+SOCKS proxies allow you to tunnel both TCP and UDP traffic, making them a very good choice for things like gaming or VOIP (Voice over IP).
+
+<Accordion title = "SOCKS5 TCP">
+<Tabs>
+	<Tab title="Python">
+		```python main.py
+		# pip install -U 'requests[socks]'
+		import requests
+
+		USER = "..."
+		PASS = "..."
+
+		PROXY = "residential.byteful.com"
+		PORT = 8123
+
+		PROXY_STRING = f"socks5://{USER}:{PASS}@{PROXY}:{PORT}"
+		PROXIES = {"http": PROXY_STRING, "https": PROXY_STRING}
+
+		TARGET = "https://http-ip.tools.byteful.com"
+
+		def main():
+		    resp = requests.get(TARGET, proxies=PROXIES)
+		```
+
+		`requests` allows us to quickly establish a SOCKS5 connection and send a HTTP request over it.
+	</Tab>
+
+ 	<Tab title="Rust">
+		```rust main.rs
+		// tokio = { version = "1", features = ["full"] }
+		// reqwest = { version = "0.12", features = ["socks"] }
+
+		const USER: &str = "...";
+		const PASS: &str = "...";
+
+		const PROXY: &str = "residential.byteful.com"
+		const PORT: u16 = 8123;
+
+		const TARGET: &str = "https://http-ip.tools.byteful.com";
+
+		#[tokio::main]
+		async fn main() {
+		    let proxy_string = format!("{USER}:{PASS}@{PROXY}:{PORT}");
+		    let proxy = reqwest::Proxy::all(proxy_string).expect("proxy failed to build");
+
+		    let client = reqwest::Client::builder()
+		        .proxy(proxy)
+		        .build()
+		        .expect("failed to build reqwest client");
+
+		    let res = client
+		        .get(TARGET)
+		        .send()
+		        .await
+		        .expect("failed sending/receiving request/resposne");
+
+		    let status = res.status();
+		    let body = res.text().await.expect("failed to read body");
+
+		    println!("Status: {status}");
+		    println!("{body}");
+		}
+		```
+
+		There are many ways to proxy TCP using SOCKS5 in Rust. The example above uses `Reqwest`, Rust's most popular high-level HTTP client.
+
+		<Note>
+			The SOCKS5 proxy connector in `Reqwest` was actually created by us in an effort to contribtue back to the open source community.
+		</Note>
+	</Tab>
+</Tabs>
+</Accordion>
+
+
+<Accordion title = "SOCKS5 UDP">
+For our UDP examples, we use the PingProxies UDP test server. This server, open and free to everyone, returns the IP addresss of any connection formed with it.
+
+<Tabs>
+	<Tab title="Python">
+		```python main.py
+		# pip install -U pysocks socket
+		import socks
+		import socket
+
+
+		USER = "..."
+		PASS = "..."
+
+		PROXY = "residential.byteful.com"
+		PORT = 8123
+
+		PROXY_STRING = f"socks5://{USER}:{PASS}@{PROXY}:{PORT}"
+
+		# Byteful UDP-based IP reporting server
+		TARGET_URI = "udp-ip.tools.byteful.com"
+		TARGET_PORT = 50001
+
+		def main():
+		    # Bind UDP Socket
+		    ss = socks.socksocket(socket.AF_INET, socket.SOCK_DGRAM)
+
+		    # Proxy all datagrams through Byteful UDP proxy
+		    ss.set_proxy(socks.SOCKS5, PROXY_URI, PROXY_PORT, False, USER, PASS)
+
+		    # Send a byte to the server and receive our IP address back
+		    ss.sendto(bytes(0x00), (TARGET_URI, TARGET_PORT))
+		    (ip, _) = ss.recvfrom(16)
+
+		```
+
+		For SOCKS UDP proxying we rely on `PySocks`, which provides an API like that of the `socket` module, except the data sent on the socket gets proxied.
+
+		<Note>
+		`PySocks` has a bug and performs UDP proxying slightly wrong - a result of them misunderstanding the  RFC. If you change the `False` to `True`, this will cause proxying to fail even though it should work fine. We have a PR to `PySocks` submitted and waiting to be merged.
+		</Note>
+	</Tab>
+
+	<Tab title="Rust">
+		```rust main.rs
+			// tokio = { version = "1", features = ["full"] }
+			// fast-socks5 = "0.10"
+
+			use fast_socks5::client::Socks5Datagram;
+			use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+			use tokio::net::TcpStream;
+
+			const USER: &str = "...";
+			const PASS: &str = "...";
+
+			const PROXY: &str = "residential.byteful.com";
+			const PORT: u16 = 8123;
+
+			const TARGET: &str = "udp-ip.tools.byteful.com";
+			const TARGET_PORT: u16 = 50001;
+
+			#[tokio::main]
+			async fn main() {
+			    let socket = {
+			        let socket = TcpStream::connect((PROXY, PORT)).await.unwrap();
+			        let local_addr = socket.local_addr().unwrap();
+
+			        Socks5Datagram::bind_with_password(socket, local_addr, USER, PASS)
+			            .await
+			            .unwrap()
+			    };
+
+			    socket
+			        .send_to(b"Hello", (TARGET, TARGET_PORT))
+			        .await
+			        .unwrap();
+
+			    let mut buf = [0; 256];
+			    let (len, remote_addr) = socket.recv_from(&mut buf).await.unwrap();
+			    let msg = String::from_utf8(buf[..len].to_vec()).unwrap();
+
+			    println!("Recv From: {remote_addr}");
+			    println!("Proxy IP: {msg}");
+			}
+		```
+	</Tab>
+</Tabs>
+</Accordion>
+
+
+## HTTP
+HTTP proxies can either tunnel TPC traffic, or HTTP request. They do this by using the CONNECT method for  establishing TCP tunnels or acting as a man in the middle, directly forwarding any non-CONNECT requests it receives.
+
+<Accordion title = "HTTP/1.1">
+	<Accordion title = "HTTP/1.1 CONNECT">
+	The CONNECT method is very simple. Simply send your target destination and proxy credentials to the proxy server in a request using the CONNECT method. The proxy server will establish a tunnel to that target server, send you a 200 OK telling you the proxy tunnel has been established, then blindly funnel bytes between you and your target.
+
+	<Tabs>
+		<Tab title="Python">
+			```python main.py
+			# pip install -U requests
+			import requests
+
+			USER = "..."
+			PASS = "..."
+
+			PROXY = "residential.byteful.com"
+			PORT = 8123
+
+			PROXY_STRING = f"socks5://{USER}:{PASS}@{PROXY}:{PORT}"
+			PROXIES = {"http": PROXY_STRING, "https": PROXY_STRING}
+
+			TARGET = "https://http-ip.tools.byteful.com"
+
+			def main():
+			    resp = requests.get(TARGET, proxies=PROXIES)
+			```
+
+			`requests` lets us quickly establish a proxy connection and send a HTTP request over it. Any proxy request to a HTTPS target will use a CONNECT to establish the proxy tunnel.
+		</Tab>
+
+		<Tab title="Rust">
+		
+			```rust main.rs
+			// ureq = "3"
+
+			const USER: &str = "...";
+			const PASS: &str = "...";
+
+			const PROXY: &str = "residential.byteful.com";
+			const PORT: u16 = 8123;
+
+			const TARGET: &str = "https://http-ip.tools.byteful.com";
+
+			fn main() {
+			    let proxy = ureq::Proxy::builder(ureq::ProxyProtocol::Http)
+			        .username(USER)
+			        .password(PASS)
+			        .host(PROXY)
+			        .port(PORT)
+			        .build()
+			        .expect("failed to build proxy");
+
+			    let agent = ureq::Agent::config_builder()
+			        .proxy(Some(proxy))
+			        .build()
+			        .new_agent();
+
+			    let res = agent
+			        .get(TARGET)
+			        .call()
+			        .expect("failed sending/receiving request/response");
+
+			    let status = res.status();
+			    let body = res
+			        .into_body()
+			        .read_to_string()
+			        .expect("failed to read body");
+
+			    println!("Status: {status}");
+			    println!("{body}");
+			}
+			```
+			This example uses `ureq`, a syncrhonous library. For an async client, slightly modify the Rust-based SOCKS TCP example (change the proxy string scheme from "socks5h" to "http")
+
+			<Note>
+				The CONNECT proxying logic underlying `ureq` (`ureq-proto`) was actually written by us to bring the library in-line with the RFC and ensure maximum compatibility.
+			</Note>
+		</Tab>
+	</Tabs>
+	</Accordion>
+
+	<Accordion title = "HTTP/1.1 MITM">
+	MITM proxying is even simpler than the CONNECT method. Simply send your request directly to the server and it will forward it for you. Unfortunately, the  simplicity of MITM proxying is offset by security risks as you can no longer perform _TLS to the Target_ to encrypt your data  and hide it from anyone listening and even the proxy server itself.
+	<Tabs>
+		<Tab title="Python">
+			```python main.py
+				# pip install -U requests
+				import requests
+
+				USER = "..."
+				PASS = "..."
+
+				PROXY = "residential.byteful.com"
+				PORT = 8123
+
+				PROXY_STRING = f"http://{USER}:{PASS}@{PORXY}:{PORT}"
+				PROXIES = {"http": PROXY_STRING, "https": PROXY_STRING}
+
+				TARGET = "http://http-ip.tools.byteful.com"
+
+				def main():
+				    resp = requests.get(TARGET, proxies=PROXIES)
+			```
+
+			`requests` lets us quickly establish a proxy connection and send a HTTP request over it. Any proxy request to a HTTP target will use MITM-style proxy requests.
+		</Tab>
+
+		<Tab title="Rust">
+			```rust main.rs
+				// tokio = { version = "1", features = ["full"] }
+				// reqwest = { version = "0.12", features = ["socks"] }
+
+				const USER: &str = "...";
+				const PASS: &str = "...";
+
+				const PROXY: &str = "residential.byteful.com"
+				const PORT: u16 = 8123;
+
+				const TARGET: &str = "http://http-ip.tools.byteful.com";
+
+				#[tokio::main]
+				async fn main() {
+				    let proxy_string = format!("{USER}:{PASS}@{PROXY}:{PORT}");
+				    let proxy = reqwest::Proxy::all(proxy_string).expect("proxy failed to build");
+
+				    let client = reqwest::Client::builder()
+				        .proxy(proxy)
+				        .build()
+				        .expect("failed to build reqwest client");
+
+				    let res = client
+				        .get(TARGET)
+				        .send()
+				        .await
+				        .expect("failed sending/receiving request/resposne");
+
+				    let status = res.status();
+				    let body = res.text().await.expect("failed to read body");
+
+				    println!("Status: {status}");
+				    println!("{body}");
+				}
+			```
+
+			`ureq` always uses a CONNECT  tunnel, even when proxying to HTTP targets (which we believe is the best option). `reqwest`, doesn't. By setting our target to a non-HTTPS  site, `reqwest` will simply send a GET request with a `Proxy-Authorization` header - MITM style.
+		</Tab>
+	</Tabs>
+	</Accordion>
+</Accordion>
+
+
+<Accordion title = "HTTP/2">
+HTTP/2 offers many advantages over HTTP/1.1. You can read about (or watch) these advantages in our blog _here_. To summarise however, HTTP/2 lets  you send multiple requests over the same connection, concurrently. Alllowing greater throughput with lower overhead.
+
+You can't just speak HTTP/2 with a server, as not all servers support it. Fortunately, there exist three methods turning a TCP connection into a HTTP/2 connection:
+
+- Prior Knowledge. Just asssume it speaks HTTP/2.
+- HTTP/1.1 Ugprade. Speak HTTP/1 to the server and ask it to do HTTP/2.
+- ALPN. When doing the TLS handshake, ask the server what protocols it supports.
+
+On our services, we support Prior Knowledge and ALPN. The examples below show how to use both methods.
+
+	<Accordion title = "HTTP/2 CONNECT">
+	CONNECTs with HTTP/2 work just the same as in HTTP/1.1, except you can send multiple of them over the same connection at the same time. In this example, we use ALPN to upgrade our connection to HTTP/2 and send a HTTP/2 CONNECT.
+	<Tabs>
+		<Tab title="Python">
+			```python main.py
+			# pip install -U httpx
+			import httpx
+
+			USER = "..."
+			PASS = "..."
+
+			PROXY = "residential.byteful.com"
+			PORT = 8123
+
+			PROXY_STRING = f"https://{USER}:{PASS}@{PORXY}:{PORT}"
+
+			TARGET1 = "https://http-ip.tools.byteful.com"
+			TARGET2 = "https://http-ip.tools.byteful.com"
+			TARGET3 = "https://http-ip.tools.byteful.com"
+
+			def main():
+				# Three requests will all use the same TCP connection to the proxy thanks to ALPN and HTTP/2
+			    with httpx.Client(proxy=PROXY_STRING) as client:
+			        resp = client.get(TARGET1, proxy=PROXY_STRING)
+			        resp = client.get(TARGET2, proxy=PROXY_STRING)
+			        resp = client.get(TARGET3, proxy=PROXY_STRING)
+			```
+
+			`httpx` is a more modern and feature-rich HTTP library. Unlike `requests`, it supports versions other than HTTP/1.1 and will use ALPN  to upgrade requests (including those to a proxy) where possible.
+		</Tab>
+	</Tabs>
+	</Accordion>
+
+	<Accordion title = "HTTP/2 MITM">
+	<Tabs>
+		<Tab title="Python">
+			```python main.py
+			# pip install -U httpx
+			import httpx
+
+			USER = "..."
+			PASS = "..."
+
+			PROXY = "residential.byteful.com"
+			PORT = 8123
+
+			PROXY_STRING = f"https://{USER}:{PASS}@{PORXY}:{PORT}"
+
+			TARGET1 = "http://http-ip.tools.byteful.com"
+			TARGET2 = "http://http-ip.tools.byteful.com"
+			TARGET3 = "http://http-ip.tools.byteful.com"
+
+			def main():
+			    with httpx.Client(proxy=PROXY_STRING) as client:
+			        resp = client.get(TARGET1, proxy=PROXY_STRING)
+			        resp = client.get(TARGET2, proxy=PROXY_STRING)
+			        resp = client.get(TARGET3, proxy=PROXY_STRING)
+			```
+
+			As with HTTP/1.1, any requests to a HTTP target will be sent MITM-style. The connection is re-used, just as  it is in the HTTP/2 CONNECT example.
+		</Tab>
+	</Tabs>
+	</Accordion>
+</Accordion>
+
+<Accordion title = "HTTP/3">
+The CONNECT method, even when used with HTTP/3 proxies which operate over UDP and QUIC, still establishes a TCP connection to the target. If you wish to establish UDP proxy connection using HTTP/3 "connection" to the target, you need to use the as-yet unsupported (by everyone, everywhere) CONNECT-UDP method. Alternatively, using SOCKS5 UDP.
+
+This means that there is currently no way to use HTTP/3 to establish a tunnel over which you can send HTTP/3 traffic. MITM-style porxying does allow you to  send HTTP/3 requests to your end target however.
+
+	<Accordion title = "HTTP/3 CONNECT">
+	<Tabs>
+		<Tab title="Rust">
+			```rust main.rs
+			// tokio = { version = "1", features = ["full"] }
+			// rustls = {version = "0.23", features = ["ring"] }
+			// h3 = "0.0.8"
+			// h3-quinn = "0.0.10"
+			// quinn = { version = "0.11", features = ["runtime-tokio"] }
+			// http = "1"
+			// bytes = "1"
+
+			use std::sync::Arc;
+
+			use bytes::{Buf, BufMut};
+			use h3::error::StreamError;
+
+			const USER: &str = "...";
+			const PASS: &str = "...";
+			const PROXY_AUTH: &str = "Basic ...";
+
+
+			const RESOLVED_PROXY: SocketAddr = SocketAdrr::new(IpAddr::from([0, 0, 0, 0], PORT))
+			const PROXY: &str = "residential.byteful.com";
+			const PORT: u16 = 8123;
+
+			const TARGET: &str = "https://http-ip.tools.byteful.com";
+
+			#[tokio::main]
+			async fn main() {
+			    rustls::crypto::ring::default_provider()
+			        .install_default()
+			        .expect("failed to install rustls crypto provider");
+
+			    let mut tls_config = rustls::ClientConfig::builder()
+			        .dangerous()
+			        .with_custom_certificate_verifier(Arc::new(BlindVerifier))
+			        .with_no_client_auth();
+			    tls_config.enable_early_data;
+			    tls_config.alpn_protocols = vec![b"h3".to_vec()];
+
+			    let client = {
+			        let mut client = h3_quinn::quinn::Endpoint::client(SocketAddr::new([0, 0, 0, 0].into(), 0)).unwrap();
+
+			        let config = quinn::crypto::rustls::QuicClientConfig::try_from(tls_config).unwrap();
+			        let config = quinn::ClientConfig::new(Arc::new(config));
+			        client.set_default_client_config(config);
+
+			        client
+			            .connect(RESOLVED_PROXY, PROXY)
+			            .unwrap()
+			            .await
+			            .unwrap()
+			    };
+
+			    let (mut conn, mut send_request) = h3::client::new(h3_quinn::Connection::new(client))
+			        .await
+			        .unwrap();
+
+			    let driver = async move {
+			        let err = std::future::poll_fn(|cx| conn.poll_close(cx)).await;
+			        if !err.is_h3_no_error() {
+			            return Err(err);
+			        } else {
+			            Ok(())
+			        }
+			    };
+
+			    let request = async move {
+					let target_name = http::Uri::from_static(TARGET).unwrap();
+			        let req = http::Request::builder()
+			            .method(http::Method::CONNECT)
+			            .uri(&target_name)
+			            .header("Proxy-Authorization", PROXY_AUTH)
+			            .body(())
+			            .unwrap();
+
+			        let bytes = request_to_bytes(req.clone());
+			        println!("REQUEST:\n{}", String::from_utf8_lossy(&bytes[..]));
+
+			        let mut stream = send_request.send_request(req).await.unwrap();
+			        let res = stream.recv_response().await.unwrap();
+
+			        let mut req = http::Request::builder()
+			            .uri(&target_name)
+			            .header("Connection", "close")
+			            .body(())
+			            .unwrap();
+
+			        req.headers_mut().insert(
+			            "Host",
+			            target_name.authority().unwrap().as_str().parse().unwrap(),
+			        );
+
+			        let bytes = request_to_bytes(req);
+			        let _ = stream.send_data(bytes).await.unwrap();
+
+			        let mut bytes = bytes::BytesMut::with_capacity(4096);
+			        loop {
+			            let res = stream.recv_data().await;
+			            match res {
+			                Ok(Some(mut chunk)) => {
+			                    if chunk.has_remaining() {
+			                        let chunk = chunk.copy_to_bytes(chunk.remaining());
+			                        bytes.extend_from_slice(&chunk[..]);
+			                    }
+			                }
+
+			                Ok(None) => break,
+			                Err(err) if err.is_h3_no_error() => break,
+
+			                Err(err) => {
+			                    match err {
+			                        StreamError::RemoteTerminate { code, .. } => {
+			                            if code == h3::error::Code::H3_NO_ERROR {
+			                                break;
+			                            }
+
+			                            println!("ERROR: {err:#}");
+			                        }
+
+			                        _ => println!("ERROR: {err:#}"),
+			                    };
+			                }
+			            };
+			        }
+	
+			        println!("RESPONSE:\n{}", String::from_utf8_lossy(&bytes[..]));
+			    };
+
+			    let (_, _) = tokio::join!(request, driver);
+			}
+
+			#[derive(Debug)]
+			struct BlindVerifier;
+			impl rustls::client::danger::ServerCertVerifier for BlindVerifier {
+			    fn verify_server_cert(
+			        &self,
+			        end_entity: &rustls::pki_types::CertificateDer<'_>,
+			        intermediates: &[rustls::pki_types::CertificateDer<'_>],
+			        server_name: &rustls::pki_types::ServerName<'_>,
+			        ocsp_response: &[u8],
+			        now: rustls::pki_types::UnixTime,
+			    ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
+			        Ok(rustls::client::danger::ServerCertVerified::assertion())
+			    }
+
+			    fn verify_tls12_signature(
+			        &self,
+			        message: &[u8],
+			        cert: &rustls::pki_types::CertificateDer<'_>,
+			        dss: &rustls::DigitallySignedStruct,
+			    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+			        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+			    }
+
+			    fn verify_tls13_signature(
+			        &self,
+			        message: &[u8],
+			        cert: &rustls::pki_types::CertificateDer<'_>,
+			        dss: &rustls::DigitallySignedStruct,
+			    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+			        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+			    }
+
+			    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+			        vec![
+			            rustls::SignatureScheme::RSA_PKCS1_SHA256,
+			            rustls::SignatureScheme::RSA_PKCS1_SHA384,
+			            rustls::SignatureScheme::RSA_PKCS1_SHA512,
+			            rustls::SignatureScheme::ECDSA_NISTP256_SHA256,
+			            rustls::SignatureScheme::ECDSA_NISTP384_SHA384,
+			            rustls::SignatureScheme::RSA_PSS_SHA256,
+			            rustls::SignatureScheme::RSA_PSS_SHA384,
+			            rustls::SignatureScheme::RSA_PSS_SHA512,
+			            rustls::SignatureScheme::ED25519,
+			        ]
+			    }
+			}
+
+			pub fn request_to_bytes(req: http::Request<()>) -> bytes::Bytes {
+			    let mut bytes = bytes::BytesMut::new();
+
+			    // Request line: METHOD PATH VERSION\r\n
+			    bytes.extend_from_slice(req.method().as_str().as_bytes());
+			    bytes.extend_from_slice(b" ");
+			    bytes.extend_from_slice(
+			        req.uri()
+			            .path_and_query()
+			            .map(|pq| pq.as_str())
+			            .unwrap_or("/")
+			            .as_bytes(),
+			    );
+
+			    bytes.extend_from_slice(b" ");
+			    bytes.extend_from_slice(format!("{:?}", req.version()).as_bytes());
+			    bytes.extend_from_slice(b"\r\n");
+
+			    // Headers
+			    for (name, value) in req.headers() {
+			        bytes.extend_from_slice(name.as_str().as_bytes());
+			        bytes.extend_from_slice(b": ");
+			        bytes.extend_from_slice(value.as_bytes());
+			        bytes.extend_from_slice(b"\r\n");
+			    }
+
+			    // Empty line
+			    bytes.extend_from_slice(b"\r\n");
+			    bytes.freeze()
+			}
+			```
+
+			This example shows how you can use the `h3` crate to execute a CONNECT request and proxy TCP trafific. If you wish to proxy traffic other than TCP, you'll need to use the CONNECT-UDP or CONNECT-IP methods.
+
+			HTTP/3 is still relatively new and unsupported. HTTP/3 proxying even more so.
+		</Tab>
+	</Tabs>
+	</Accordion>
+
+	<Accordion title = "HTTP/3 MITM">
+	<Tabs>
+		<Tab title="Rust">
+			```rust main.rs
+				// tokio = { version = "1", features = ["full"] }
+				// rustls = {version = "0.23", features = ["ring"] }
+				// h3 = "0.0.8"
+				// h3-quinn = "0.0.10"
+				// quinn = { version = "0.11", features = ["runtime-tokio"] }
+				// http = "1"
+				// bytes = "1"
+
+				use std::sync::Arc;
+
+				use bytes::{Buf, BufMut};
+				use h3::error::StreamError;
+
+				const USER: &str = "...";
+				const PASS: &str = "...";
+				const PROXY_AUTH: &str = "Basic ...";
+
+				const RESOLVED_PROXY: SocketAddr = SocketAdrr::new(IpAddr::from([0, 0, 0, 0], PORT))
+				const PROXY: &str = "residential.byteful.com";
+				const PORT: u16 = 8123;
+
+				const TARGET: &str = "https://http-ip.tools.byteful.com";
+
+				#[tokio::main]
+				async fn main() {
+				    rustls::crypto::ring::default_provider()
+				        .install_default()
+				        .expect("failed to install rustls crypto provider");
+
+				    let mut tls_config = rustls::ClientConfig::builder()
+				        .dangerous()
+				        .with_custom_certificate_verifier(Arc::new(BlindVerifier))
+				        .with_no_client_auth();
+				    tls_config.enable_early_data;
+				    tls_config.alpn_protocols = vec![b"h3".to_vec()];
+
+				    let client = {
+				        let mut client = h3_quinn::quinn::Endpoint::client(local_addr).unwrap();
+
+				        let config = quinn::crypto::rustls::QuicClientConfig::try_from(tls_config).unwrap();
+				        let config = quinn::ClientConfig::new(Arc::new(config));
+				        client.set_default_client_config(config);
+
+				        client
+				            .connect(RESOLVED_PROXY, PROXY)
+				            .unwrap()
+				            .await
+				            .unwrap()
+				    };
+
+				    let (mut conn, mut send_request) = h3::client::new(h3_quinn::Connection::new(client))
+				        .await
+				        .unwrap();
+
+				    let driver = async move {
+				        let err = std::future::poll_fn(|cx| conn.poll_close(cx)).await;
+				        if !err.is_h3_no_error() {
+				            return Err(err);
+				        } else {
+				            Ok(())
+				        }
+				    };
+
+				    let request = async move {
+						let target_name = http::Uri::from_static(TARGET).unwrap();
+				        let req = http::Request::builder()
+				            .method(http::Method::GET)
+				            .uri(&target_name)
+				            .header("Proxy-Authorization", proxy_auth)
+				            .body(())
+				            .unwrap();
+
+				        let mut stream = send_request.send_request(req).await.unwrap();
+				        let res = stream.recv_response().await.unwrap();
+
+				        let mut bytes = bytes::BytesMut::with_capacity(4096);
+				        loop {
+				            let res = stream.recv_data().await;
+				            match res {
+				                Ok(Some(mut chunk)) => {
+				                    if chunk.has_remaining() {
+				                        let chunk = chunk.copy_to_bytes(chunk.remaining());
+				                        bytes.extend_from_slice(&chunk[..]);
+				                    }
+				                }
+
+				                Ok(None) => break,
+				                Err(err) if err.is_h3_no_error() => break,
+
+				                Err(err) => {
+				                    match err {
+				                        StreamError::RemoteTerminate { code, .. } => {
+				                            if code == h3::error::Code::H3_NO_ERROR {
+				                                break;
+				                            }
+
+				                            println!("ERROR: {err:#}");
+				                        }
+
+				                        _ => println!("ERROR: {err:#}"),
+				                    };
+				                }
+				            };
+				        }
+
+				        println!("HEADERS: {res:?}");
+				        println!("BODY:\n{}", String::from_utf8_lossy(&bytes[..]));
+				    };
+
+				    let (_, _) = tokio::join!(request, driver);
+				}
+
+				#[derive(Debug)]
+				struct BlindVerifier;
+				impl rustls::client::danger::ServerCertVerifier for BlindVerifier {
+				    fn verify_server_cert(
+				        &self,
+				        end_entity: &rustls::pki_types::CertificateDer<'_>,
+				        intermediates: &[rustls::pki_types::CertificateDer<'_>],
+				        server_name: &rustls::pki_types::ServerName<'_>,
+				        ocsp_response: &[u8],
+				        now: rustls::pki_types::UnixTime,
+				    ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
+				        Ok(rustls::client::danger::ServerCertVerified::assertion())
+				    }
+
+				    fn verify_tls12_signature(
+				        &self,
+				        message: &[u8],
+				        cert: &rustls::pki_types::CertificateDer<'_>,
+				        dss: &rustls::DigitallySignedStruct,
+				    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+				        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+				    }
+
+				    fn verify_tls13_signature(
+				        &self,
+				        message: &[u8],
+				        cert: &rustls::pki_types::CertificateDer<'_>,
+				        dss: &rustls::DigitallySignedStruct,
+				    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+				        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+				    }
+
+				    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+				        vec![
+				            rustls::SignatureScheme::RSA_PKCS1_SHA256,
+				            rustls::SignatureScheme::RSA_PKCS1_SHA384,
+				            rustls::SignatureScheme::RSA_PKCS1_SHA512,
+				            rustls::SignatureScheme::ECDSA_NISTP256_SHA256,
+				            rustls::SignatureScheme::ECDSA_NISTP384_SHA384,
+				            rustls::SignatureScheme::RSA_PSS_SHA256,
+				            rustls::SignatureScheme::RSA_PSS_SHA384,
+				            rustls::SignatureScheme::RSA_PSS_SHA512,
+				            rustls::SignatureScheme::ED25519,
+				        ]
+				    }
+				}
+
+				pub fn request_to_bytes(req: http::Request<()>) -> bytes::Bytes {
+				    let mut bytes = bytes::BytesMut::new();
+
+				    // Request line: METHOD PATH VERSION\r\n
+				    bytes.extend_from_slice(req.method().as_str().as_bytes());
+				    bytes.extend_from_slice(b" ");
+				    bytes.extend_from_slice(
+				        req.uri()
+				            .path_and_query()
+				            .map(|pq| pq.as_str())
+				            .unwrap_or("/")
+				            .as_bytes(),
+				    );
+
+				    bytes.extend_from_slice(b" ");
+				    bytes.extend_from_slice(format!("{:?}", req.version()).as_bytes());
+				    bytes.extend_from_slice(b"\r\n");
+
+				    // Headers
+				    for (name, value) in req.headers() {
+				        bytes.extend_from_slice(name.as_str().as_bytes());
+				        bytes.extend_from_slice(b": ");
+				        bytes.extend_from_slice(value.as_bytes());
+				        bytes.extend_from_slice(b"\r\n");
+				    }
+
+				    // Empty line
+				    bytes.extend_from_slice(b"\r\n");
+				    bytes.freeze()
+				}
+
+			```
+
+			This shows how to proxy MITM style requests. In this case, we receive your HTTP/3 request, establish a HTTP/3 connection to your target server, execute the TLS handshake and then forward your request. This lets you proxy HTTP/3 to the end target, but in return we are able to see everything in your Requests and Responses.
+		</Tab>
+	</Tabs>
+	</Accordion>
+</Accordion>
+
+## HTTP/3 over SOCKS5 UDP - Controlling Your Fingerprint
+The example above shows how to proxy TCP traffic over a HTTP/3 connection. The examplebelow shows how to proxy HTTP/3 using a UDP proxy. Most proxy providers who talk about "HTTP/3 proxying" mean this second option. 
+
+When proxying HTTP/3 using a HTTP/3 MITM proxy, the proxy server is responsible for performing the TLS handshake with the target. As such, you end up with a TLS fingerprint (JA3/JA4) that might not be ideal for your use-case. Until the CONNECT-UDP method becomes widespread, the best option is proxy your HTTP/3 traffic using SOCKS5 UDP proxies.
+
+<Tabs>
+	<Tab title="Rust">
+		```rust main.rs
+			// tokio = { version = "1", features = ["full"] }
+			// rustls = {version = "0.23", features = ["ring"] }
+			// h3 = "0.0.8"
+			// h3-quinn = "0.0.10"
+			// quinn = { version = "0.11", features = ["runtime-tokio"] }
+			// http = "1"
+			// bytes = "1"
+
+			use std::sync::Arc;
+
+			use bytes::{Buf, BufMut};
+			use h3::error::StreamError;
+
+			const USER: &str = "...";
+			const PASS: &str = "...";
+			const PROXY_AUTH: &str = "Basic ...";
+
+			const RESOLVED_PROXY: SocketAddr = SocketAdrr::new(IpAddr::from([0, 0, 0, 0], PORT))
+			const PROXY: &str = "residential.byteful.com";
+			const PORT: u16 = 8123;
+
+			const TARGET: &str = "https://http-ip.tools.byteful.com";
+
+			#[tokio::main]
+			async fn main() {
+			    rustls::crypto::ring::default_provider()
+			        .install_default()
+			        .expect("failed to install rustls crypto provider");
+
+			    let mut tls_config = rustls::ClientConfig::builder()
+			        .dangerous()
+			        .with_custom_certificate_verifier(Arc::new(BlindVerifier))
+			        .with_no_client_auth();
+			    tls_config.enable_early_data;
+			    tls_config.alpn_protocols = vec![b"h3".to_vec()];
+
+			    let client = {
+			        let mut client = h3_quinn::quinn::Endpoint::client(local_addr).unwrap();
+
+			        let config = quinn::crypto::rustls::QuicClientConfig::try_from(tls_config).unwrap();
+			        let config = quinn::ClientConfig::new(Arc::new(config));
+			        client.set_default_client_config(config);
+
+			        client
+			            .connect(RESOLVED_PROXY, PROXY)
+			            .unwrap()
+			            .await
+			            .unwrap()
+			    };
+
+			    let (mut conn, mut send_request) = h3::client::new(h3_quinn::Connection::new(client))
+			        .await
+			        .unwrap();
+
+			    let driver = async move {
+			        let err = std::future::poll_fn(|cx| conn.poll_close(cx)).await;
+			        if !err.is_h3_no_error() {
+			            return Err(err);
+			        } else {
+			            Ok(())
+			        }
+			    };
+
+			    let request = async move {
+					let target_name = http::Uri::from_static(TARGET).unwrap();
+			        let req = http::Request::builder()
+			            .method(http::Method::GET)
+			            .uri(&target_name)
+			            .header("Proxy-Authorization", proxy_auth)
+			            .body(())
+			            .unwrap();
+
+			        let mut stream = send_request.send_request(req).await.unwrap();
+			        let res = stream.recv_response().await.unwrap();
+
+			        let mut bytes = bytes::BytesMut::with_capacity(4096);
+			        loop {
+			            let res = stream.recv_data().await;
+			            match res {
+			                Ok(Some(mut chunk)) => {
+			                    if chunk.has_remaining() {
+			                        let chunk = chunk.copy_to_bytes(chunk.remaining());
+			                        bytes.extend_from_slice(&chunk[..]);
+			                    }
+			                }
+
+			                Ok(None) => break,
+			                Err(err) if err.is_h3_no_error() => break,
+
+			                Err(err) => {
+			                    match err {
+			                        StreamError::RemoteTerminate { code, .. } => {
+			                            if code == h3::error::Code::H3_NO_ERROR {
+			                                break;
+			                            }
+
+			                            println!("ERROR: {err:#}");
+			                        }
+
+			                        _ => println!("ERROR: {err:#}"),
+			                    };
+			                }
+			            };
+			        }
+
+			        println!("HEADERS: {res:?}");
+			        println!("BODY:\n{}", String::from_utf8_lossy(&bytes[..]));
+			    };
+
+			    let (_, _) = tokio::join!(request, driver);
+			}
+
+			#[derive(Debug)]
+			struct BlindVerifier;
+			impl rustls::client::danger::ServerCertVerifier for BlindVerifier {
+			    fn verify_server_cert(
+			        &self,
+			        end_entity: &rustls::pki_types::CertificateDer<'_>,
+			        intermediates: &[rustls::pki_types::CertificateDer<'_>],
+			        server_name: &rustls::pki_types::ServerName<'_>,
+			        ocsp_response: &[u8],
+			        now: rustls::pki_types::UnixTime,
+			    ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
+			        Ok(rustls::client::danger::ServerCertVerified::assertion())
+			    }
+
+			    fn verify_tls12_signature(
+			        &self,
+			        message: &[u8],
+			        cert: &rustls::pki_types::CertificateDer<'_>,
+			        dss: &rustls::DigitallySignedStruct,
+			    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+			        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+			    }
+
+			    fn verify_tls13_signature(
+			        &self,
+			        message: &[u8],
+			        cert: &rustls::pki_types::CertificateDer<'_>,
+			        dss: &rustls::DigitallySignedStruct,
+			    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+			        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+			    }
+
+			    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+			        vec![
+			            rustls::SignatureScheme::RSA_PKCS1_SHA256,
+			            rustls::SignatureScheme::RSA_PKCS1_SHA384,
+			            rustls::SignatureScheme::RSA_PKCS1_SHA512,
+			            rustls::SignatureScheme::ECDSA_NISTP256_SHA256,
+			            rustls::SignatureScheme::ECDSA_NISTP384_SHA384,
+			            rustls::SignatureScheme::RSA_PSS_SHA256,
+			            rustls::SignatureScheme::RSA_PSS_SHA384,
+			            rustls::SignatureScheme::RSA_PSS_SHA512,
+			            rustls::SignatureScheme::ED25519,
+			        ]
+			    }
+			}
+
+			pub fn request_to_bytes(req: http::Request<()>) -> bytes::Bytes {
+			    let mut bytes = bytes::BytesMut::new();
+
+			    // Request line: METHOD PATH VERSION\r\n
+			    bytes.extend_from_slice(req.method().as_str().as_bytes());
+			    bytes.extend_from_slice(b" ");
+			    bytes.extend_from_slice(
+			        req.uri()
+			            .path_and_query()
+			            .map(|pq| pq.as_str())
+			            .unwrap_or("/")
+			            .as_bytes(),
+			    );
+
+			    bytes.extend_from_slice(b" ");
+			    bytes.extend_from_slice(format!("{:?}", req.version()).as_bytes());
+			    bytes.extend_from_slice(b"\r\n");
+
+			    // Headers
+			    for (name, value) in req.headers() {
+			        bytes.extend_from_slice(name.as_str().as_bytes());
+			        bytes.extend_from_slice(b": ");
+			        bytes.extend_from_slice(value.as_bytes());
+			        bytes.extend_from_slice(b"\r\n");
+			    }
+
+			    // Empty line
+			    bytes.extend_from_slice(b"\r\n");
+			    bytes.freeze()
+			}					
+		```
+
+		Simply combine the creation of a SOCKS5 UDP socket with a HTTP/3 MITM request. There should be nothing new here.
+	</Tab>
+</Tabs>
+

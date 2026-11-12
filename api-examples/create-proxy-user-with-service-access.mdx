@@ -1,0 +1,438 @@
+---
+title: "Create a proxy user with service-restricted access"
+description: "Learn how to create a proxy user with restricted access to specific services using Proxy User ACLs"
+icon: "user-lock"
+---
+
+This example demonstrates how to create a proxy user with service-restricted access. This is useful for organizing access by teams, departments, or customers where each needs access to specific proxy services but not others.
+
+<Info>
+Default Proxy Users cannot have ACL rules applied and have access to all proxies on your account.
+</Info>
+
+## Overview
+
+The process involves two steps:
+1. Create a proxy user with `proxy_user_access_type: "service_restricted"`
+2. Create Proxy User ACL entries to grant access to specific services
+
+<CodeGroup>
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY,
+    "Content-Type": "application/json"
+}
+
+def create_service_restricted_proxy_user(user_id, password, service_ids, metadata=None):
+    """
+    Create a proxy user with service-restricted access.
+
+    Args:
+        user_id: ID for the proxy user
+        password: Password for the proxy user
+        service_ids: List of service IDs to grant access to
+        metadata: Optional metadata dictionary
+
+    Returns:
+        Tuple of (proxy_user_data, acl_ids) or (None, None) if failed
+    """
+
+    # Step 1: Create the proxy user with service_restricted access type
+    create_user_payload = {
+        "proxy_user_id": user_id,
+        "proxy_user_password": password,
+        "proxy_user_access_type": "service_restricted"
+    }
+
+    if metadata:
+        create_user_payload["proxy_user_metadata"] = metadata
+
+    response = requests.post(
+        f"{BASE_URL}/user/proxy_user/create",
+        json=create_user_payload,
+        headers=headers
+    )
+
+    if response.status_code != 201:
+        print(f"Error creating proxy user: {response.status_code}")
+        print(response.text)
+        return None, None
+
+    user_data = response.json()
+    print(f"Successfully created proxy user: {user_id}")
+
+    # Step 2: Create ACL entries for each service
+    acl_ids = []
+    for service_id in service_ids:
+        acl_payload = {
+            "proxy_user_id": user_id,
+            "service_id": service_id
+        }
+
+        acl_response = requests.post(
+            f"{BASE_URL}/user/proxy_user_acl/create",
+            json=acl_payload,
+            headers=headers
+        )
+
+        if acl_response.status_code != 201:
+            print(f"Error creating ACL for service {service_id}: {acl_response.status_code}")
+            print(acl_response.text)
+            continue
+
+        acl_data = acl_response.json()
+        acl_id = acl_data["created"][0]
+        acl_ids.append(acl_id)
+        print(f"Granted access to service: {service_id}")
+
+    return user_data, acl_ids
+
+# Example usage
+if __name__ == "__main__":
+    # Create an SEO team proxy user with access to two services
+    USER_ID = "seo_team"
+    PASSWORD = "securepassword123"
+    SERVICE_IDS = ["API-SEO-001", "API-SEO-002"]
+    METADATA = {
+        "department": "SEO",
+        "team_lead": "Jane Smith",
+        "purpose": "keyword_research"
+    }
+
+    user_data, acl_ids = create_service_restricted_proxy_user(
+        user_id=USER_ID,
+        password=PASSWORD,
+        service_ids=SERVICE_IDS,
+        metadata=METADATA
+    )
+
+    if user_data:
+        print("\n=== Setup Complete ===")
+        print(f"Proxy User ID: {USER_ID}")
+        print(f"Password: {PASSWORD}")
+        print(f"Access Type: service_restricted")
+        print(f"Services Granted: {', '.join(SERVICE_IDS)}")
+        print(f"ACL Entries Created: {len(acl_ids)}")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Create a proxy user with service-restricted access
+ * @param {Object} options - Configuration options
+ * @returns {Promise<Object>} Created user and ACL data
+ */
+async function createServiceRestrictedProxyUser(options) {
+  const { userId, password, serviceIds, metadata } = options;
+
+  const headers = {
+    'X-API-Public-Key': API_PUBLIC_KEY,
+    'X-API-Private-Key': API_PRIVATE_KEY,
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    // Step 1: Create the proxy user with service_restricted access type
+    const createUserPayload = {
+      proxy_user_id: userId,
+      proxy_user_password: password,
+      proxy_user_access_type: 'service_restricted'
+    };
+
+    if (metadata) {
+      createUserPayload.proxy_user_metadata = metadata;
+    }
+
+    const userResponse = await fetch(`${BASE_URL}/user/proxy_user/create`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(createUserPayload)
+    });
+
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      throw new Error(`Error creating proxy user: ${userResponse.status}, ${errorText}`);
+    }
+
+    const userData = await userResponse.json();
+    console.log(`Successfully created proxy user: ${userId}`);
+
+    // Step 2: Create ACL entries for each service
+    const aclIds = [];
+    for (const serviceId of serviceIds) {
+      const aclPayload = {
+        proxy_user_id: userId,
+        service_id: serviceId
+      };
+
+      const aclResponse = await fetch(`${BASE_URL}/user/proxy_user_acl/create`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(aclPayload)
+      });
+
+      if (!aclResponse.ok) {
+        const errorText = await aclResponse.text();
+        console.error(`Error creating ACL for service ${serviceId}: ${aclResponse.status}, ${errorText}`);
+        continue;
+      }
+
+      const aclData = await aclResponse.json();
+      const aclId = aclData.created[0];
+      aclIds.push(aclId);
+      console.log(`Granted access to service: ${serviceId}`);
+    }
+
+    return { userData, aclIds };
+
+  } catch (error) {
+    console.error('Error:', error.message);
+    return null;
+  }
+}
+
+// Example usage
+async function main() {
+  const USER_ID = 'seo_team';
+  const PASSWORD = 'securepassword123';
+  const SERVICE_IDS = ['API-SEO-001', 'API-SEO-002'];
+  const METADATA = {
+    department: 'SEO',
+    team_lead: 'Jane Smith',
+    purpose: 'keyword_research'
+  };
+
+  const result = await createServiceRestrictedProxyUser({
+    userId: USER_ID,
+    password: PASSWORD,
+    serviceIds: SERVICE_IDS,
+    metadata: METADATA
+  });
+
+  if (result) {
+    console.log('\n=== Setup Complete ===');
+    console.log(`Proxy User ID: ${USER_ID}`);
+    console.log(`Password: ${PASSWORD}`);
+    console.log(`Access Type: service_restricted`);
+    console.log(`Services Granted: ${SERVICE_IDS.join(', ')}`);
+    console.log(`ACL Entries Created: ${result.aclIds.length}`);
+  }
+}
+
+main().catch(console.error);
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public';
+
+/**
+ * Create a proxy user with service-restricted access
+ *
+ * @param string $apiPublicKey API public key
+ * @param string $apiPrivateKey API private key
+ * @param string $baseUrl Base API URL
+ * @param string $userId Proxy user ID
+ * @param string $password Proxy user password
+ * @param array $serviceIds Array of service IDs to grant access to
+ * @param array|null $metadata Optional metadata
+ * @return array|null Array with userData and aclIds, or null on failure
+ */
+function createServiceRestrictedProxyUser($apiPublicKey, $apiPrivateKey, $baseUrl, $userId, $password, $serviceIds, $metadata = null) {
+    $headers = [
+        'X-API-Public-Key: ' . $apiPublicKey,
+        'X-API-Private-Key: ' . $apiPrivateKey,
+        'Content-Type: application/json'
+    ];
+
+    // Step 1: Create the proxy user with service_restricted access type
+    $createUserPayload = [
+        'proxy_user_id' => $userId,
+        'proxy_user_password' => $password,
+        'proxy_user_access_type' => 'service_restricted'
+    ];
+
+    if ($metadata !== null) {
+        $createUserPayload['proxy_user_metadata'] = $metadata;
+    }
+
+    $ch = curl_init($baseUrl . '/user/proxy_user/create');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($createUserPayload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $userResponse = curl_exec($ch);
+    $userHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($userHttpCode !== 201) {
+        echo "Error creating proxy user: " . $userHttpCode . "\n";
+        echo $userResponse . "\n";
+        return null;
+    }
+
+    $userData = json_decode($userResponse, true);
+    echo "Successfully created proxy user: {$userId}\n";
+
+    // Step 2: Create ACL entries for each service
+    $aclIds = [];
+    foreach ($serviceIds as $serviceId) {
+        $aclPayload = [
+            'proxy_user_id' => $userId,
+            'service_id' => $serviceId
+        ];
+
+        $ch = curl_init($baseUrl . '/user/proxy_user_acl/create');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($aclPayload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $aclResponse = curl_exec($ch);
+        $aclHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($aclHttpCode !== 201) {
+            echo "Error creating ACL for service {$serviceId}: " . $aclHttpCode . "\n";
+            echo $aclResponse . "\n";
+            continue;
+        }
+
+        $aclData = json_decode($aclResponse, true);
+        $aclId = $aclData['created'][0];
+        $aclIds[] = $aclId;
+        echo "Granted access to service: {$serviceId}\n";
+    }
+
+    return ['userData' => $userData, 'aclIds' => $aclIds];
+}
+
+// Example usage
+$USER_ID = 'seo_team';
+$PASSWORD = 'securepassword123';
+$SERVICE_IDS = ['API-SEO-001', 'API-SEO-002'];
+$METADATA = [
+    'department' => 'SEO',
+    'team_lead' => 'Jane Smith',
+    'purpose' => 'keyword_research'
+];
+
+$result = createServiceRestrictedProxyUser(
+    $apiPublicKey,
+    $apiPrivateKey,
+    $baseUrl,
+    $USER_ID,
+    $PASSWORD,
+    $SERVICE_IDS,
+    $METADATA
+);
+
+if ($result) {
+    echo "\n=== Setup Complete ===\n";
+    echo "Proxy User ID: {$USER_ID}\n";
+    echo "Password: {$PASSWORD}\n";
+    echo "Access Type: service_restricted\n";
+    echo "Services Granted: " . implode(', ', $SERVICE_IDS) . "\n";
+    echo "ACL Entries Created: " . count($result['aclIds']) . "\n";
+}
+?>
+```
+</CodeGroup>
+
+## Key Points
+
+### 1. Access Type Must Be Set
+
+When creating the proxy user, you must set `proxy_user_access_type` to `"service_restricted"`:
+
+```json
+{
+  "proxy_user_id": "seo_team",
+  "proxy_user_password": "securepassword123",
+  "proxy_user_access_type": "service_restricted"
+}
+```
+
+### 2. ACL Entries Grant Actual Access
+
+After creating the proxy user, create one ACL entry for each service they should access:
+
+```json
+{
+  "proxy_user_id": "seo_team",
+  "service_id": "API-SEO-001"
+}
+```
+
+The proxy user can access **all proxies** within each granted service.
+
+### 3. Multiple Services
+
+You can grant access to multiple services by creating multiple ACL entries:
+
+- ACL 1: `seo_team` → `API-SEO-001`
+- ACL 2: `seo_team` → `API-SEO-002`
+- ACL 3: `seo_team` → `API-SEO-003`
+
+## Verifying Access
+
+After setup, you can verify the ACL entries were created:
+
+```bash
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/search?proxy_user_id=seo_team' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Managing Access
+
+### Adding More Services
+
+Create additional ACL entries to grant access to more services:
+
+```bash
+curl --request POST \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/create' \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key' \
+  --data '{
+    "proxy_user_id": "seo_team",
+    "service_id": "API-SEO-003"
+  }'
+```
+
+### Removing Service Access
+
+Delete an ACL entry to revoke access to a service:
+
+```bash
+curl --request DELETE \
+  --url 'https://api.byteful.com/1.0/public/user/proxy_user_acl/delete/{proxy_user_acl_id}' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+## Related Documentation
+
+- [Proxy User ACL Object](/api-objects/proxy-user-acl)
+- [Proxy User Access Control Guide](/api-explainers/proxy-user-access-control)
+- [Manage Proxy User ACLs](/api-examples/manage-proxy-user-acls)

@@ -1,0 +1,594 @@
+---
+title: 'Sorting'
+description: 'Controlling result order with the sort_by parameter in the Byteful API'
+---
+
+The Byteful API provides sorting capabilities that allow you to control the order of returned results. Proper sorting is essential for creating intuitive, user-friendly interfaces and for optimizing data processing workflows.
+
+## The `sort_by` Parameter
+
+All search endpoints in the Byteful API support the `sort_by` parameter, which allows you to specify fields to sort by and the direction of the sort.
+
+## Basic Sorting
+
+The simplest form of sorting uses a single field name without any suffix, which sorts in ascending order (A-Z, oldest to newest):
+
+```
+GET /public/user/proxy/search?sort_by=proxy_last_update_datetime
+```
+
+This sorts results by the creation datetime in ascending order (oldest to newest).
+
+## Sort Direction
+
+You can specify the sort direction by adding a direction suffix:
+
+- Ascending: Add `_asc` suffix (default when no suffix is specified)
+- Descending: Add `_desc` suffix
+
+```
+GET /public/user/service/search?sort_by=service_expiry_datetime_desc
+```
+
+This sorts services by expiry date in descending order (expiring soonest first).
+
+```
+GET /public/user/proxy/search?sort_by=country_id_asc
+```
+
+This sorts proxies by country ID in ascending order (A-Z).
+
+## Special Sorting Options
+
+### Random Sorting
+
+Some endpoints support a special `random` sort option:
+
+```
+GET /public/user/proxy/search?sort_by=random
+```
+
+This returns results in a random order, which can be useful for:
+- Load balancing across multiple proxies
+- Selecting random samples for testing
+- Presenting different options to users
+
+<Note>
+Random sorting should not be used with pagination if you need to access the complete randomly ordered set, as each page will have its own random order.
+</Note>
+
+## Sorting and Pagination
+
+Sorting works in conjunction with pagination. When you specify both a sort order and pagination parameters, the API:
+
+1. Applies the sort to the entire result set
+2. Divides the sorted results into pages
+3. Returns the requested page
+
+For example:
+
+```
+GET /public/user/proxy/search?sort_by=proxy_last_update_datetime_desc&page=2&per_page=25
+```
+
+This returns the second page of proxies, with 25 proxies per page, sorted by creation date from newest to oldest.
+
+## Code Examples
+
+<CodeGroup>
+```bash cURL
+# Sort by creation date (newest first)
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?sort_by=proxy_last_update_datetime_desc' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Sort alphabetically by country
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?sort_by=country_id_asc' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Sort randomly
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?sort_by=random' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Sort by expiry date and paginate
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/service/search?sort_by=service_expiry_datetime_asc&page=1&per_page=10' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+```
+
+```python Python
+import requests
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user/proxy/search"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+# Sort by creation date (newest first)
+def get_newest_proxies(limit=10):
+    params = {
+        "sort_by": "proxy_last_update_datetime_desc",
+        "per_page": limit
+    }
+    
+    response = requests.get(BASE_URL, params=params, headers=headers)
+    return response.json()
+
+# Sort alphabetically by country
+def get_proxies_by_country():
+    params = {
+        "sort_by": "country_id_asc",
+        "per_page": 100
+    }
+    
+    response = requests.get(BASE_URL, params=params, headers=headers)
+    return response.json()
+
+# Sort randomly - useful for load balancing
+def get_random_proxies(limit=5):
+    params = {
+        "sort_by": "random",
+        "per_page": limit
+    }
+    
+    response = requests.get(BASE_URL, params=params, headers=headers)
+    return response.json()
+
+# Sort by expiry date (closest first) with pagination
+def get_expiring_proxies(page=1, per_page=25):
+    service_url = "https://api.byteful.com/1.0/public/user/service/search"
+    params = {
+        "sort_by": "service_expiry_datetime_asc",
+        "page": page,
+        "per_page": per_page
+    }
+    
+    response = requests.get(service_url, params=params, headers=headers)
+    return response.json()
+
+# Example usage
+if __name__ == "__main__":
+    # Get 10 newest proxies
+    newest_proxies = get_newest_proxies(10)
+    print(f"Newest proxies: {len(newest_proxies['data'])} items")
+    
+    # Get proxies sorted by country
+    country_sorted = get_proxies_by_country()
+    print(f"Country-sorted proxies: {len(country_sorted['data'])} items")
+    
+    # Get 5 random proxies
+    random_proxies = get_random_proxies(5)
+    print(f"Random proxies: {len(random_proxies['data'])} items")
+    
+    # Get first page of soon-to-expire services
+    expiring_services = get_expiring_proxies(1, 25)
+    print(f"Expiring services: {len(expiring_services['data'])} items")
+```
+
+```javascript JavaScript
+// API credentials
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public/user/proxy/search';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY
+};
+
+// Sort by creation date (newest first)
+async function getNewestProxies(limit = 10) {
+  const url = new URL(BASE_URL);
+  url.searchParams.append('sort_by', 'proxy_last_update_datetime_desc');
+  url.searchParams.append('per_page', limit);
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Sort alphabetically by country
+async function getProxiesByCountry() {
+  const url = new URL(BASE_URL);
+  url.searchParams.append('sort_by', 'country_id_asc');
+  url.searchParams.append('per_page', 100);
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Sort randomly - useful for load balancing
+async function getRandomProxies(limit = 5) {
+  const url = new URL(BASE_URL);
+  url.searchParams.append('sort_by', 'random');
+  url.searchParams.append('per_page', limit);
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Sort by expiry date (closest first) with pagination
+async function getExpiringServices(page = 1, perPage = 25) {
+  const serviceUrl = 'https://api.byteful.com/1.0/public/user/service/search';
+  const url = new URL(serviceUrl);
+  url.searchParams.append('sort_by', 'service_expiry_datetime_asc');
+  url.searchParams.append('page', page);
+  url.searchParams.append('per_page', perPage);
+  
+  const response = await fetch(url, { headers });
+  return await response.json();
+}
+
+// Example usage
+async function main() {
+  try {
+    // Get 10 newest proxies
+    const newestProxies = await getNewestProxies(10);
+    console.log(`Newest proxies: ${newestProxies.data.length} items`);
+    
+    // Get proxies sorted by country
+    const countrySorted = await getProxiesByCountry();
+    console.log(`Country-sorted proxies: ${countrySorted.data.length} items`);
+    
+    // Get 5 random proxies
+    const randomProxies = await getRandomProxies(5);
+    console.log(`Random proxies: ${randomProxies.data.length} items`);
+    
+    // Get first page of soon-to-expire services
+    const expiringServices = await getExpiringServices(1, 25);
+    console.log(`Expiring services: ${expiringServices.data.length} items`);
+  } catch (error) {
+    console.error('Error fetching sorted data:', error);
+  }
+}
+
+main();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public/user/proxy/search';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey
+];
+
+// Helper function to make API requests
+function makeRequest($url, $headers) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        throw new Exception("API request failed with status code: " . $httpCode);
+    }
+    
+    return json_decode($response, true);
+}
+
+// Sort by creation date (newest first)
+function getNewestProxies($baseUrl, $headers, $limit = 10) {
+    $url = $baseUrl . '?sort_by=proxy_last_update_datetime_desc&per_page=' . $limit;
+    return makeRequest($url, $headers);
+}
+
+// Sort alphabetically by country
+function getProxiesByCountry($baseUrl, $headers) {
+    $url = $baseUrl . '?sort_by=country_id_asc&per_page=100';
+    return makeRequest($url, $headers);
+}
+
+// Sort randomly - useful for load balancing
+function getRandomProxies($baseUrl, $headers, $limit = 5) {
+    $url = $baseUrl . '?sort_by=random&per_page=' . $limit;
+    return makeRequest($url, $headers);
+}
+
+// Sort by expiry date (closest first) with pagination
+function getExpiringServices($headers, $page = 1, $perPage = 25) {
+    $serviceUrl = 'https://api.byteful.com/1.0/public/user/service/search';
+    $url = $serviceUrl . '?sort_by=service_expiry_datetime_asc&page=' . $page . '&per_page=' . $perPage;
+    return makeRequest($url, $headers);
+}
+
+// Example usage
+try {
+    // Get 10 newest proxies
+    $newestProxies = getNewestProxies($baseUrl, $headers, 10);
+    echo "Newest proxies: " . count($newestProxies['data']) . " items\n";
+    
+    // Get proxies sorted by country
+    $countrySorted = getProxiesByCountry($baseUrl, $headers);
+    echo "Country-sorted proxies: " . count($countrySorted['data']) . " items\n";
+    
+    // Get 5 random proxies
+    $randomProxies = getRandomProxies($baseUrl, $headers, 5);
+    echo "Random proxies: " . count($randomProxies['data']) . " items\n";
+    
+    // Get first page of soon-to-expire services
+    $expiringServices = getExpiringServices($headers, 1, 25);
+    echo "Expiring services: " . count($expiringServices['data']) . " items\n";
+} catch (Exception $e) {
+    echo "Error fetching sorted data: " . $e->getMessage() . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public/user/proxy/search"
+)
+
+// Response structure for API
+type ApiResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+// makeRequest is a helper function to make API requests
+func makeRequest(url string) (*ApiResponse, error) {
+	// Create a new request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check status code
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API request failed with status code: %d", resp.StatusCode)
+	}
+
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response ApiResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+// getNewestProxies gets proxies sorted by creation date (newest first)
+func getNewestProxies(limit int) (*ApiResponse, error) {
+	url := fmt.Sprintf("%s?sort_by=proxy_last_update_datetime_desc&per_page=%d", baseURL, limit)
+	return makeRequest(url)
+}
+
+// getProxiesByCountry gets proxies sorted alphabetically by country
+func getProxiesByCountry() (*ApiResponse, error) {
+	url := fmt.Sprintf("%s?sort_by=country_id_asc&per_page=100", baseURL)
+	return makeRequest(url)
+}
+
+// getRandomProxies gets randomly sorted proxies
+func getRandomProxies(limit int) (*ApiResponse, error) {
+	url := fmt.Sprintf("%s?sort_by=random&per_page=%d", baseURL, limit)
+	return makeRequest(url)
+}
+
+// getExpiringServices gets services sorted by expiry date (closest first) with pagination
+func getExpiringServices(page, perPage int) (*ApiResponse, error) {
+	serviceURL := "https://api.byteful.com/1.0/public/user/service/search"
+	url := fmt.Sprintf("%s?sort_by=service_expiry_datetime_asc&page=%d&per_page=%d", serviceURL, page, perPage)
+	return makeRequest(url)
+}
+
+func main() {
+	// Get 10 newest proxies
+	newestProxies, err := getNewestProxies(10)
+	if err != nil {
+		fmt.Printf("Error fetching newest proxies: %v\n", err)
+	} else {
+		fmt.Printf("Newest proxies: %d items\n", len(newestProxies.Data))
+	}
+	
+	// Get proxies sorted by country
+	countrySorted, err := getProxiesByCountry()
+	if err != nil {
+		fmt.Printf("Error fetching country-sorted proxies: %v\n", err)
+	} else {
+		fmt.Printf("Country-sorted proxies: %d items\n", len(countrySorted.Data))
+	}
+	
+	// Get 5 random proxies
+	randomProxies, err := getRandomProxies(5)
+	if err != nil {
+		fmt.Printf("Error fetching random proxies: %v\n", err)
+	} else {
+		fmt.Printf("Random proxies: %d items\n", len(randomProxies.Data))
+	}
+	
+	// Get first page of soon-to-expire services
+	expiringServices, err := getExpiringServices(1, 25)
+	if err != nil {
+		fmt.Printf("Error fetching expiring services: %v\n", err)
+	} else {
+		fmt.Printf("Expiring services: %d items\n", len(expiringServices.Data))
+	}
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class PingProxiesSorting {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public/user/proxy/search";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Response class to hold API data
+    static class ApiResponse {
+        public List<Map<String, Object>> data;
+        
+        @JsonProperty("item_count")
+        public int itemCount;
+        
+        public String message;
+        
+        public int page;
+        
+        @JsonProperty("per_page")
+        public int perPage;
+        
+        @JsonProperty("total_count")
+        public int totalCount;
+    }
+    
+    // Helper method to make API requests
+    private static ApiResponse makeRequest(String url) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() != 200) {
+            throw new IOException("API request failed with status code: " + response.statusCode());
+        }
+        
+        return mapper.readValue(response.body(), ApiResponse.class);
+    }
+    
+    // Get proxies sorted by creation date (newest first)
+    public static ApiResponse getNewestProxies(int limit) throws IOException, InterruptedException {
+        String url = BASE_URL + "?sort_by=proxy_last_update_datetime_desc&per_page=" + limit;
+        return makeRequest(url);
+    }
+    
+    // Get proxies sorted alphabetically by country
+    public static ApiResponse getProxiesByCountry() throws IOException, InterruptedException {
+        String url = BASE_URL + "?sort_by=country_id_asc&per_page=100";
+        return makeRequest(url);
+    }
+    
+    // Get randomly sorted proxies
+    public static ApiResponse getRandomProxies(int limit) throws IOException, InterruptedException {
+        String url = BASE_URL + "?sort_by=random&per_page=" + limit;
+        return makeRequest(url);
+    }
+    
+    // Get services sorted by expiry date (closest first) with pagination
+    public static ApiResponse getExpiringServices(int page, int perPage) throws IOException, InterruptedException {
+        String serviceUrl = "https://api.byteful.com/1.0/public/user/service/search";
+        String url = serviceUrl + "?sort_by=service_expiry_datetime_asc&page=" + page + "&per_page=" + perPage;
+        return makeRequest(url);
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Get 10 newest proxies
+            ApiResponse newestProxies = getNewestProxies(10);
+            System.out.println("Newest proxies: " + newestProxies.data.size() + " items");
+            
+            // Get proxies sorted by country
+            ApiResponse countrySorted = getProxiesByCountry();
+            System.out.println("Country-sorted proxies: " + countrySorted.data.size() + " items");
+            
+            // Get 5 random proxies
+            ApiResponse randomProxies = getRandomProxies(5);
+            System.out.println("Random proxies: " + randomProxies.data.size() + " items");
+            
+            // Get first page of soon-to-expire services
+            ApiResponse expiringServices = getExpiringServices(1, 25);
+            System.out.println("Expiring services: " + expiringServices.data.size() + " items");
+        } catch (Exception e) {
+            System.out.println("Error fetching sorted data: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Examples for Common Use Cases
+
+### Show newest items first
+
+```
+GET /public/user/service/search?sort_by=service_creation_datetime_desc
+```
+
+### Alphabetical order by name
+
+```
+GET /public/user/proxy_user/search?sort_by=proxy_user_id_asc
+```
+
+### Find proxies expiring soon (earliest first)
+
+```
+GET /public/user/service/search?sort_by=service_expiry_datetime_asc
+```
+
+By effectively using the sorting capabilities of the Byteful API, you can create more intuitive and efficient applications that present data in the most useful order for your specific needs.

@@ -1,0 +1,47 @@
+---
+title: "Requiring Two-factor Authentication"
+description: "Learn how to make two-factor authentication (2FA) mandatory for every member of your organization"
+---
+
+An organization can require two-factor authentication (2FA) from every member. A member without 2FA cannot log in to the organization until they turn it on. Members can use an authenticator app or email codes.
+
+Owners and Admins can change this setting.
+
+## Before You Start
+
+Turn on 2FA for your own account first. Byteful does not let you require 2FA while your own account has none. See [Two-factor Authentication (2FA)](/general/two-factor-authentication).
+
+## Turning On the Requirement
+
+1. Make sure that you are in the organization workspace.
+2. Open the workspace switcher popup at the bottom of the sidebar and click **Organization settings**.
+3. On the **General** tab, find the **Security** card.
+4. Turn on **Require two-step authentication**.
+
+<img
+  src="/images/general/organizations/require-two-factor.png"
+  alt="Byteful Require Two-step Authentication"
+/>
+
+The requirement applies at the next login of each member. To turn it off, turn off the same switch.
+
+## What Members See
+
+A member without 2FA can still log in to Byteful and use their personal workspace. When they choose your organization on the **Choose workspace** page, the organization card shows **Requires 2FA** and a notice.
+
+<img
+  src="/images/general/organizations/workspace-requires-two-factor.png"
+  alt="Byteful Workspace Requires Two-step Authentication"
+/>
+
+1. The member clicks **Set up two-step authentication**. Byteful opens their personal workspace on the **Security** tab.
+2. The member turns on an authenticator app or email codes.
+3. The member chooses your organization again, and logs in.
+
+## Invitations
+
+You can invite people who do not have 2FA. They can accept the invitation and become members. They log in to the organization after they turn on 2FA.
+
+<Warning>
+The requirement checks only that 2FA is on in a member's account. It does not make Google logins ask for a code. A member who logs in with Google, or with another sign-in provider, does not enter a 2FA code. If 2FA is on in that member's account, they can log in to the organization with Google and no code.
+</Warning>

@@ -1,0 +1,788 @@
+---
+title: 'Pagination'
+description: 'Working with paginated responses in the Byteful API'
+---
+
+The Byteful API uses pagination to manage large result sets efficiently. Without pagination, endpoints that return many items could slow down your application and consume unnecessary data.
+
+## How Pagination Works
+
+When you make a request to an endpoint that returns multiple items (like search endpoints), the API divides the results into pages and returns one page at a time. This approach:
+
+- Improves performance for large datasets
+- Reduces data consumption
+- Provides more predictable response times
+- Makes responses easier to process
+
+<Warning>
+  Some /search endpoints may return total_count as -1 in cases where the number of objects is too large to count efficiently and quickly.
+</Warning>
+
+## Pagination Parameters
+
+Byteful API uses the following query parameters to control pagination:
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `page` | integer | The page number to retrieve | 1 |
+| `per_page` | integer | Number of items to return per page | 100 |
+
+### Example Request
+
+```bash
+GET https://api.byteful.com/1.0/public/user/proxy/search?page=2&per_page=25
+```
+
+This request would retrieve the second page of proxies, with 25 proxies per page.
+
+## Pagination Response
+
+Paginated responses include metadata to help you navigate through all available results. Here's what you'll find in a typical paginated response:
+
+```json
+{
+  "data": [
+    // Array of items for the current page
+  ],
+  "item_count": 25,     // Number of items in the current page
+  "message": "Search successful",
+  "page": 2,            // Current page number
+  "per_page": 25,       // Items per page
+  "total_count": 134    // Total items across all pages
+}
+```
+
+### Pagination Response Fields
+
+| Field | Description |
+|-------|-------------|
+| `data` | Array containing the items for the current page |
+| `item_count` | Number of items returned in the current page |
+| `page` | Current page number |
+| `per_page` | Number of items requested per page |
+| `total_count` | Total number of items that match your search criteria across all pages |
+
+## Calculating Total Pages
+
+To calculate the total number of pages, use:
+
+```
+total_pages = Math.ceil(total_count / per_page)
+```
+
+## Pagination Limits
+
+- **Minimum `per_page`**: 1
+- **Maximum `per_page`**: 100
+- **Default `per_page`**: 100
+- **Minimum `page`**: 1
+
+If you request a page beyond the available data, you'll receive an empty data array
+
+## Code Examples
+
+<CodeGroup>
+```bash cURL
+# Basic pagination example with cURL
+curl --request GET \
+  --url 'https://api.byteful.com/1.0/public/user/proxy/search?page=2&per_page=25' \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key'
+
+# Fetch all pages sequentially with bash
+#!/bin/bash
+page=1
+per_page=100
+total_items=0
+total_pages=0
+
+# First request to get total count
+response=$(curl -s \
+  --url "https://api.byteful.com/1.0/public/user/proxy/search?page=${page}&per_page=${per_page}" \
+  --header 'X-API-Public-Key: your_public_key' \
+  --header 'X-API-Private-Key: your_private_key')
+
+total_items=$(echo $response | jq -r '.total_count')
+total_pages=$(( (total_items + per_page - 1) / per_page ))
+
+echo "Total items: $total_items, Total pages: $total_pages"
+
+# Fetch each page
+for ((page=1; page<=total_pages; page++)); do
+  echo "Fetching page $page of $total_pages"
+  curl -s \
+    --url "https://api.byteful.com/1.0/public/user/proxy/search?page=${page}&per_page=${per_page}" \
+    --header 'X-API-Public-Key: your_public_key' \
+    --header 'X-API-Private-Key: your_private_key' \
+    > "page_${page}.json"
+done
+```
+
+```python Python
+import requests
+import math
+import asyncio
+import aiohttp
+
+# API credentials
+API_PUBLIC_KEY = "your_public_key"
+API_PRIVATE_KEY = "your_private_key"
+BASE_URL = "https://api.byteful.com/1.0/public/user/proxy/search"
+
+# Headers for authentication
+headers = {
+    "X-API-Public-Key": API_PUBLIC_KEY,
+    "X-API-Private-Key": API_PRIVATE_KEY
+}
+
+# Sequential pagination
+def fetch_all_pages_sequential():
+    per_page = 100
+    page = 1
+    all_items = []
+    
+    # Make initial request to get total count
+    response = requests.get(
+        BASE_URL, 
+        params={"page": page, "per_page": per_page}, 
+        headers=headers
+    )
+    data = response.json()
+    
+    # Calculate total pages
+    total_count = data["total_count"]
+    total_pages = math.ceil(total_count / per_page)
+    
+    print(f"Found {total_count} items across {total_pages} pages")
+    
+    # Add first page results
+    all_items.extend(data["data"])
+    
+    # Fetch remaining pages
+    for page in range(2, total_pages + 1):
+        print(f"Fetching page {page} of {total_pages}")
+        response = requests.get(
+            BASE_URL, 
+            params={"page": page, "per_page": per_page}, 
+            headers=headers
+        )
+        data = response.json()
+        all_items.extend(data["data"])
+    
+    return all_items
+
+# Parallel pagination with asyncio
+async def fetch_page(session, page, per_page):
+    """Fetch a specific page of results"""
+    params = {"page": page, "per_page": per_page}
+    
+    async with session.get(BASE_URL, params=params, headers=headers) as response:
+        return await response.json()
+
+async def fetch_all_pages_parallel(total_count, per_page=100):
+    """Fetch all pages in parallel"""
+    total_pages = math.ceil(total_count / per_page)
+    all_items = []
+    
+    async with aiohttp.ClientSession() as session:
+        # Create tasks for each page request
+        page_tasks = []
+        for page in range(1, total_pages + 1):
+            page_tasks.append(fetch_page(session, page, per_page))
+        
+        # Run all page requests concurrently
+        all_results = await asyncio.gather(*page_tasks)
+        
+        # Extract data from each page
+        for result in all_results:
+            all_items.extend(result["data"])
+        
+        return all_items
+
+# Usage example
+async def main():
+    # First get total count
+    response = requests.get(
+        BASE_URL, 
+        params={"page": 1, "per_page": 1}, 
+        headers=headers
+    )
+    data = response.json()
+    total_count = data["total_count"]
+    
+    # Get all items in parallel
+    results = await fetch_all_pages_parallel(total_count)
+    print(f"Fetched {len(results)} items using parallel pagination")
+
+if __name__ == "__main__":
+    # For sequential approach
+    # all_items = fetch_all_pages_sequential()
+    # print(f"Fetched {len(all_items)} items using sequential pagination")
+    
+    # For parallel approach
+    asyncio.run(main())
+```
+
+```javascript JavaScript
+// Using fetch and async/await for pagination
+const API_PUBLIC_KEY = 'your_public_key';
+const API_PRIVATE_KEY = 'your_private_key';
+const BASE_URL = 'https://api.byteful.com/1.0/public/user/proxy/search';
+
+// Headers for authentication
+const headers = {
+  'X-API-Public-Key': API_PUBLIC_KEY,
+  'X-API-Private-Key': API_PRIVATE_KEY
+};
+
+// Sequential pagination
+async function fetchAllPagesSequential() {
+  const perPage = 100;
+  let page = 1;
+  let allItems = [];
+  
+  // Make initial request to get total count
+  const response = await fetch(`${BASE_URL}?page=${page}&per_page=${perPage}`, { headers });
+  const data = await response.json();
+  
+  // Calculate total pages
+  const totalCount = data.total_count;
+  const totalPages = Math.ceil(totalCount / perPage);
+  
+  console.log(`Found ${totalCount} items across ${totalPages} pages`);
+  
+  // Add first page results
+  allItems = allItems.concat(data.data);
+  
+  // Fetch remaining pages
+  for (page = 2; page <= totalPages; page++) {
+    console.log(`Fetching page ${page} of ${totalPages}`);
+    const pageResponse = await fetch(`${BASE_URL}?page=${page}&per_page=${perPage}`, { headers });
+    const pageData = await pageResponse.json();
+    allItems = allItems.concat(pageData.data);
+  }
+  
+  return allItems;
+}
+
+// Parallel pagination with Promise.all
+async function fetchAllPagesParallel() {
+  const perPage = 100;
+  
+  // First get total count
+  const countResponse = await fetch(`${BASE_URL}?page=1&per_page=1`, { headers });
+  const countData = await countResponse.json();
+  const totalCount = countData.total_count;
+  const totalPages = Math.ceil(totalCount / perPage);
+  
+  console.log(`Found ${totalCount} items across ${totalPages} pages`);
+  
+  // Create an array of promises for each page
+  const pagePromises = [];
+  
+  for (let page = 1; page <= totalPages; page++) {
+    const pagePromise = fetch(`${BASE_URL}?page=${page}&per_page=${perPage}`, { headers })
+      .then(response => response.json())
+      .then(data => data.data);
+    
+    pagePromises.push(pagePromise);
+  }
+  
+  // Wait for all requests to complete
+  const pageResults = await Promise.all(pagePromises);
+  
+  // Flatten the array of arrays into a single array
+  const allItems = pageResults.flat();
+  
+  return allItems;
+}
+
+// Usage
+async function main() {
+  try {
+    // Choose which method to use
+    // const allItems = await fetchAllPagesSequential();
+    const allItems = await fetchAllPagesParallel();
+    
+    console.log(`Successfully fetched ${allItems.length} items`);
+    // Process your items here
+  } catch (error) {
+    console.error('Error fetching paginated data:', error);
+  }
+}
+
+main();
+```
+
+```php PHP
+<?php
+// API credentials
+$apiPublicKey = 'your_public_key';
+$apiPrivateKey = 'your_private_key';
+$baseUrl = 'https://api.byteful.com/1.0/public/user/proxy/search';
+
+// Headers for authentication
+$headers = [
+    'X-API-Public-Key: ' . $apiPublicKey,
+    'X-API-Private-Key: ' . $apiPrivateKey
+];
+
+// Sequential pagination
+function fetchAllPagesSequential($baseUrl, $headers) {
+    $perPage = 100;
+    $page = 1;
+    $allItems = [];
+    
+    // Initial request to get total count
+    $ch = curl_init($baseUrl . '?page=' . $page . '&per_page=' . $perPage);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $data = json_decode($response, true);
+    curl_close($ch);
+    
+    // Calculate total pages
+    $totalCount = $data['total_count'];
+    $totalPages = ceil($totalCount / $perPage);
+    
+    echo "Found {$totalCount} items across {$totalPages} pages\n";
+    
+    // Add first page results
+    $allItems = array_merge($allItems, $data['data']);
+    
+    // Fetch remaining pages
+    for ($page = 2; $page <= $totalPages; $page++) {
+        echo "Fetching page {$page} of {$totalPages}\n";
+        
+        $ch = curl_init($baseUrl . '?page=' . $page . '&per_page=' . $perPage);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        
+        $response = curl_exec($ch);
+        $data = json_decode($response, true);
+        curl_close($ch);
+        
+        $allItems = array_merge($allItems, $data['data']);
+    }
+    
+    return $allItems;
+}
+
+// Parallel pagination with curl_multi
+function fetchAllPagesParallel($baseUrl, $headers) {
+    $perPage = 100;
+    
+    // First get total count
+    $ch = curl_init($baseUrl . '?page=1&per_page=1');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    $response = curl_exec($ch);
+    $data = json_decode($response, true);
+    curl_close($ch);
+    
+    $totalCount = $data['total_count'];
+    $totalPages = ceil($totalCount / $perPage);
+    
+    echo "Found {$totalCount} items across {$totalPages} pages\n";
+    
+    // Set up curl_multi handle
+    $mh = curl_multi_init();
+    $curlHandles = [];
+    $responses = [];
+    
+    // Create a curl handle for each page
+    for ($page = 1; $page <= $totalPages; $page++) {
+        $curlHandles[$page] = curl_init($baseUrl . '?page=' . $page . '&per_page=' . $perPage);
+        curl_setopt($curlHandles[$page], CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curlHandles[$page], CURLOPT_HTTPHEADER, $headers);
+        
+        curl_multi_add_handle($mh, $curlHandles[$page]);
+    }
+    
+    // Execute all requests simultaneously
+    $running = null;
+    do {
+        curl_multi_exec($mh, $running);
+    } while ($running);
+    
+    // Get all the responses
+    $allItems = [];
+    foreach ($curlHandles as $page => $ch) {
+        $response = curl_multi_getcontent($ch);
+        $data = json_decode($response, true);
+        
+        $allItems = array_merge($allItems, $data['data']);
+        
+        // Clean up
+        curl_multi_remove_handle($mh, $ch);
+    }
+    
+    curl_multi_close($mh);
+    
+    return $allItems;
+}
+
+// Usage
+try {
+    // Choose which method to use
+    // $allItems = fetchAllPagesSequential($baseUrl, $headers);
+    $allItems = fetchAllPagesParallel($baseUrl, $headers);
+    
+    echo "Successfully fetched " . count($allItems) . " items\n";
+    // Process your items here
+} catch (Exception $e) {
+    echo "Error fetching paginated data: " . $e->getMessage() . "\n";
+}
+?>
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"math"
+	"net/http"
+	"sync"
+)
+
+// API credentials
+const (
+	apiPublicKey  = "your_public_key"
+	apiPrivateKey = "your_private_key"
+	baseURL       = "https://api.byteful.com/1.0/public/user/proxy/search"
+)
+
+// Response structure for paginated API
+type PaginatedResponse struct {
+	Data       []map[string]interface{} `json:"data"`
+	ItemCount  int                      `json:"item_count"`
+	Message    string                   `json:"message"`
+	Page       int                      `json:"page"`
+	PerPage    int                      `json:"per_page"`
+	TotalCount int                      `json:"total_count"`
+}
+
+// fetchPage retrieves a single page of results
+func fetchPage(page, perPage int) (*PaginatedResponse, error) {
+	// Create a new request
+	req, err := http.NewRequest("GET", baseURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add query parameters
+	q := req.URL.Query()
+	q.Add("page", fmt.Sprintf("%d", page))
+	q.Add("per_page", fmt.Sprintf("%d", perPage))
+	req.URL.RawQuery = q.Encode()
+
+	// Add headers
+	req.Header.Add("X-API-Public-Key", apiPublicKey)
+	req.Header.Add("X-API-Private-Key", apiPrivateKey)
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read and parse the response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response PaginatedResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+// fetchAllPagesSequential retrieves all pages one after another
+func fetchAllPagesSequential() ([]map[string]interface{}, error) {
+	perPage := 100
+	allItems := []map[string]interface{}{}
+
+	// Get first page to determine total count
+	firstPage, err := fetchPage(1, perPage)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total pages
+	totalCount := firstPage.TotalCount
+	totalPages := int(math.Ceil(float64(totalCount) / float64(perPage)))
+
+	fmt.Printf("Found %d items across %d pages\n", totalCount, totalPages)
+
+	// Add first page results
+	allItems = append(allItems, firstPage.Data...)
+
+	// Fetch remaining pages
+	for page := 2; page <= totalPages; page++ {
+		fmt.Printf("Fetching page %d of %d\n", page, totalPages)
+		
+		pageData, err := fetchPage(page, perPage)
+		if err != nil {
+			return nil, err
+		}
+		
+		allItems = append(allItems, pageData.Data...)
+	}
+
+	return allItems, nil
+}
+
+// fetchAllPagesParallel retrieves all pages concurrently
+func fetchAllPagesParallel() ([]map[string]interface{}, error) {
+	perPage := 100
+	
+	// Get first page to determine total count
+	firstPage, err := fetchPage(1, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total pages
+	totalCount := firstPage.TotalCount
+	totalPages := int(math.Ceil(float64(totalCount) / float64(perPage)))
+
+	fmt.Printf("Found %d items across %d pages\n", totalCount, totalPages)
+
+	// Channel to collect results
+	resultsChan := make(chan []map[string]interface{}, totalPages)
+	errChan := make(chan error, totalPages)
+	
+	// WaitGroup to track completion
+	var wg sync.WaitGroup
+	
+	// Fetch all pages concurrently
+	for page := 1; page <= totalPages; page++ {
+		wg.Add(1)
+		
+		go func(p int) {
+			defer wg.Done()
+			
+			pageData, err := fetchPage(p, perPage)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			
+			resultsChan <- pageData.Data
+		}(page)
+	}
+	
+	// Wait for all goroutines to complete
+	go func() {
+		wg.Wait()
+		close(resultsChan)
+		close(errChan)
+	}()
+	
+	// Check for errors
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return nil, err
+		}
+	default:
+	}
+	
+	// Collect all results
+	allItems := []map[string]interface{}{}
+	for pageData := range resultsChan {
+		allItems = append(allItems, pageData...)
+	}
+	
+	return allItems, nil
+}
+
+func main() {
+	// Choose which method to use
+	// allItems, err := fetchAllPagesSequential()
+	allItems, err := fetchAllPagesParallel()
+	
+	if err != nil {
+		fmt.Printf("Error fetching paginated data: %v\n", err)
+		return
+	}
+	
+	fmt.Printf("Successfully fetched %d items\n", len(allItems))
+	// Process your items here
+}
+```
+
+```java Java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class PingProxiesPagination {
+
+    // API credentials
+    private static final String API_PUBLIC_KEY = "your_public_key";
+    private static final String API_PRIVATE_KEY = "your_private_key";
+    private static final String BASE_URL = "https://api.byteful.com/1.0/public/user/proxy/search";
+    
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    
+    // Response class to hold paginated data
+    static class PaginatedResponse {
+        public List<Map<String, Object>> data;
+        public int item_count;
+        public String message;
+        public int page;
+        public int per_page;
+        public int total_count;
+    }
+    
+    // Fetch a single page
+    private static PaginatedResponse fetchPage(int page, int perPage) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "?page=" + page + "&per_page=" + perPage))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), PaginatedResponse.class);
+    }
+    
+    // Fetch a single page asynchronously
+    private static CompletableFuture<PaginatedResponse> fetchPageAsync(int page, int perPage) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "?page=" + page + "&per_page=" + perPage))
+                .header("X-API-Public-Key", API_PUBLIC_KEY)
+                .header("X-API-Private-Key", API_PRIVATE_KEY)
+                .GET()
+                .build();
+        
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenApply(body -> {
+                    try {
+                        return mapper.readValue(body, PaginatedResponse.class);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+    
+    // Sequential pagination
+    public static List<Map<String, Object>> fetchAllPagesSequential() throws IOException, InterruptedException {
+        int perPage = 100;
+        List<Map<String, Object>> allItems = new ArrayList<>();
+        
+        // Get first page to determine total count
+        PaginatedResponse firstPage = fetchPage(1, perPage);
+        
+        // Calculate total pages
+        int totalCount = firstPage.total_count;
+        int totalPages = (int) Math.ceil((double) totalCount / perPage);
+        
+        System.out.printf("Found %d items across %d pages%n", totalCount, totalPages);
+        
+        // Add first page results
+        allItems.addAll(firstPage.data);
+        
+        // Fetch remaining pages
+        for (int page = 2; page <= totalPages; page++) {
+            System.out.printf("Fetching page %d of %d%n", page, totalPages);
+            
+            PaginatedResponse pageData = fetchPage(page, perPage);
+            allItems.addAll(pageData.data);
+        }
+        
+        return allItems;
+    }
+    
+    // Parallel pagination
+    public static List<Map<String, Object>> fetchAllPagesParallel() throws IOException, InterruptedException {
+        int perPage = 100;
+        
+        // Get first page to determine total count
+        PaginatedResponse firstPage = fetchPage(1, 1);
+        
+        // Calculate total pages
+        int totalCount = firstPage.total_count;
+        int totalPages = (int) Math.ceil((double) totalCount / perPage);
+        
+        System.out.printf("Found %d items across %d pages%n", totalCount, totalPages);
+        
+        // Create a list of futures for all pages
+        List<CompletableFuture<PaginatedResponse>> pageFutures = 
+                IntStream.rangeClosed(1, totalPages)
+                        .mapToObj(page -> fetchPageAsync(page, perPage))
+                        .collect(Collectors.toList());
+        
+        // Combine all futures into a single future that completes when all page requests are done
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                pageFutures.toArray(new CompletableFuture[0])
+        );
+        
+        // When all futures complete, collect all the items from all pages
+        List<Map<String, Object>> allItems = allFutures.thenApply(v -> 
+                pageFutures.stream()
+                        .map(CompletableFuture::join)
+                        .flatMap(response -> response.data.stream())
+                        .collect(Collectors.toList())
+        ).join();
+        
+        return allItems;
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Choose which method to use
+            // List<Map<String, Object>> allItems = fetchAllPagesSequential();
+            List<Map<String, Object>> allItems = fetchAllPagesParallel();
+            
+            System.out.printf("Successfully fetched %d items%n", allItems.size());
+            // Process your items here
+        } catch (Exception e) {
+            System.out.println("Error fetching paginated data: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Efficient Pagination Strategies
+
+### Sequential Paging
+
+The simplest approach is to request page 1, then page 2, and so on. This is demonstrated in the code examples above for each language.
+
+### Parallel Paging
+
+For faster data collection, you can calculate the total pages and make multiple concurrent requests. This approach is particularly useful when you need to retrieve a large dataset quickly.
+
+The parallel examples above show how to implement this pattern in different languages.
+
+<Warning>
+  Use parallel paging cautiously to avoid rate limiting. Consider how many concurrent requests you're making to the API.
+</Warning>

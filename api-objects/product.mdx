@@ -1,0 +1,114 @@
+---
+title: 'Product'
+description: 'Understanding the Product object and its role in the Byteful API'
+---
+
+The Product object represents a proxy product or service available for purchase in the Byteful system. It contains essential information about the product including its type, characteristics, pricing options, and availability.
+
+## Key Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `product_id` | string | Unique identifier for the product |
+| `product_name` | string | Name of the product as displayed to customers |
+| `product_type` | string | Type of product (datacenter, isp, residential, mobile, credit) |
+| `product_protocol` | string | IP protocol supported by the product (ipv4, ipv6, dual) |
+| `product_is_active` | boolean | Indicates if the product is currently active |
+| `product_is_available` | boolean | Indicates if the product is available for purchase |
+| `product_is_visible` | boolean | Indicates if the product is visible in product listings |
+| `product_is_per_ip` | boolean | Indicates if the product is sold on a per-IP basis |
+| `product_stock` | integer | Number of units available for purchase |
+| `country_id` | string | Country code where the product is located (for region-specific products) |
+| `product_prices` | array | List of pricing options with different billing cycles |
+
+## Product Prices
+
+Each product contains an array of price objects with the following structure:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `price_id` | string | Unique identifier for the price |
+| `price_type` | string | Type of price (recurring, one_time) |
+| `price_amount` | integer | Cost in cents |
+| `price_is_subscription` | boolean | Whether the price represents a subscription |
+| `price_cycle_interval` | string | Billing interval (month, year) |
+| `price_cycle_interval_count` | integer | Number of intervals for billing cycle |
+| `price_tier_type` | string | Type of pricing tier (volume, graduated) |
+| `price_tiers` | array | Array of pricing tiers for volume pricing |
+
+## Object Relationships
+
+The Product object is connected to several other objects in the Byteful API:
+
+- **Checkout Catalog**: Products are summarized in the checkout catalog for purchase
+- **Services**: When purchased, a product creates a service
+- **Countries**: Products may be region-specific and tied to particular countries
+
+## Related Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /public/user/product/search` | Search products with various filters |
+| `GET /public/user/checkout/catalog` | Get simplified product listing for checkout |
+
+## Example Response
+
+```json
+{
+  "data": [
+    {
+      "product_id": "prod_RCLjwcUyqkfd2f",
+      "product_name": "Static Residential ISP Proxies [FR]",
+      "product_type": "isp",
+      "product_protocol": "ipv4",
+      "product_is_active": true,
+      "product_is_available": false,
+      "product_is_visible": true,
+      "product_is_per_ip": true,
+      "product_stock": 0,
+      "country_id": "fr",
+      "product_image": "https://files.stripe.com/links/MDB8YWNjdF8xSDdkOEFCMkJVbHFpbTVsfGZsX2xpdmVfNU9KWUZCTnp4djA0dmpuV3F0bjM2ck9i00dSLST0rl",
+      "product_description": null,
+      "product_instock": false,
+      "product_prices": [
+        {
+          "price_id": "price_1QJx2EB2BUlqim5ltggZJfyY",
+          "price_type": "recurring",
+          "price_is_subscription": true,
+          "price_cycle_interval": "month",
+          "price_cycle_interval_count": 1,
+          "price_tier_type": "volume",
+          "price_tiers": [
+            {
+              "price_tier_up_to": 1,
+              "price_tier_amount": 350
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Usage Notes
+
+- The `product_stock` indicates real-time availability for purchase
+- A value of `0` for `product_stock` means the product is out of stock
+- A value of `-1` for `product_stock` means the product has infinite stock (typically for residential products)
+- The `product_protocol` indicates which IP versions are supported (IPv4, IPv6, or both)
+- The `product_prices` array shows all available pricing options and billing cycles
+- For `residential` and `mobile` products, pricing is data-based rather than per-IP
+- The `product_is_per_ip` flag distinguishes between per-IP pricing (datacenter/ISP) and data-based pricing (residential/mobile)
+- Products with `country_id` are region-specific, while those without may be global
+- The `price_amount` and `price_tier_amount` are in cents (e.g., 350 means $3.50)
+
+## Product Types
+
+| Type | Description |
+|------|-------------|
+| `datacenter` | Commercial datacenter proxies with high speed |
+| `isp` | Static residential ISP proxies with carrier legitimacy |
+| `residential` | Dynamic residential proxies from real consumer connections |
+| `mobile` | Dynamic mobile proxies from real mobile devices |
+| `credit` | Account credit that can be applied to purchases |
